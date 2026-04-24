@@ -394,7 +394,7 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
       <div class="chapter-badge" aria-hidden="true">Chapter 1 · Pre-Training · Stage 1</div>
       <h2 class="section-title">Downloading<br>the Internet</h2>
       <p class="body-text">The first step is collecting an enormous amount of text. Organizations like <span class="highlight">Common Crawl</span> have been crawling the web since 2007 — indexing 2.7 billion pages by 2024. This raw data is then filtered into a high-quality dataset like <span class="highlight">FineWeb</span>.</p>
-      <p class="body-text">The goal: <em>large quantity</em> of <em>high quality</em>, <em>diverse</em> documents. After aggressive filtering, you end up with about <span class="highlight-a">44 terabytes</span> — roughly what fits on a single hard drive — representing ~15 trillion tokens.</p>
+      <p class="body-text">The goal: <em>large quantity</em> of <em>high quality</em>, <em>diverse</em> documents. After aggressive filtering, you end up with about <span class="highlight-a">44 terabytes</span> — roughly 10 consumer hard drives worth of text — representing ~15 trillion tokens.</p>
       <div class="insight-box">
         <strong>Key Insight</strong>
         The quality and diversity of this training data has more impact on the final model than almost anything else. Garbage in, garbage out — but at a trillion-token scale.
@@ -514,6 +514,10 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
       <div class="fade-up" style="animation-delay:.15s">
         <h3 class="sub-title">Transformer Architecture</h3>
         <svg id="transformer-svg" viewBox="0 0 360 340" width="100%" style="background:var(--card);border:1px solid var(--border);border-radius:10px;display:block;margin-bottom:16px" role="img" aria-label="Transformer architecture diagram showing data flow from input tokens through embedding, attention, and feed-forward layers to output logits"><title>Transformer Architecture</title></svg>
+        <div class="insight-box">
+          <strong>What is an Embedding?</strong>
+          Each token ID maps to a learned vector of ~1,000–4,000 numbers called its <em>embedding</em>. Think of it as a coordinate in meaning-space — initialized randomly, then shaped by training. The same token (e.g. "bank") always enters the network with the same embedding vector. <em>Attention layers</em> then mix in context from surrounding tokens, so by the time "bank" reaches deeper layers, "river bank" and "bank account" carry completely different representations. Polysemy is resolved by context, not by storing multiple meanings per token.
+        </div>
       </div>
     </div>
     <div class="fade-up" style="animation-delay:.2s">
@@ -918,7 +922,7 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
       </div>
     </div>
     <div class="fade-up" style="text-align:center;margin-top:60px">
-      <p class="body-text" style="max-width:500px;margin:0 auto;color:var(--txt2)">Built from Andrej Karpathy's "Intro to Large Language Models" lecture. The most important takeaway: every word generated is a probabilistic sample — a biased coin flip, at 100K-way scale, billions of times.</p>
+      <p class="body-text" style="max-width:560px;margin:0 auto;color:var(--txt2)">Built from Andrej Karpathy's <a href="https://www.youtube.com/watch?v=zjkBMFhNj_g" target="_blank" rel="noopener" style="color:var(--cyan)">"Intro to Large Language Models"</a> lecture — all facts, figures, and framings traced back to that source. Interactive visualizations built with AI assistance. The most important takeaway: every word generated is a probabilistic sample — a biased coin flip, at 100K-way scale, billions of times.</p>
     </div>
   </div>
 </section>
