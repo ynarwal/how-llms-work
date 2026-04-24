@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How LLMs Work — A Visual Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Syne:wght@500;600;700;800&family=Manrope:wght@300;400;500;600&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030810;--surface:#070E1B;--card:#0C1525;--card2:#111D30;
+  --border:rgba(30,60,100,0.4);--border-b:rgba(0,229,255,0.18);
+  --cyan:#00E5FF;--cyan-d:rgba(0,229,255,0.12);--cyan-g:rgba(0,229,255,0.06);
+  --amber:#FFB020;--amber-d:rgba(255,176,32,0.12);
+  --purple:#9D6EF8;--purple-d:rgba(157,110,248,0.12);
+  --green:#00D68F;--green-d:rgba(0,214,143,0.12);
+  --red:#FF5252;--red-d:rgba(255,82,82,0.12);
+  --txt:#C8DCFF;--txt2:#7A95B8;--txt-b:#F0F8FF;
+  --df:'Cormorant Garamond',Georgia,serif;
+  --ds:'Syne',sans-serif;
+  --db:'Manrope',sans-serif;
+  --dm:'JetBrains Mono',monospace;
+  --focus-ring:0 0 0 2px var(--bg),0 0 0 4px var(--cyan);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--db);font-size:16px;line-height:1.75;overflow-x:hidden}
+::selection{background:rgba(0,229,255,0.2);color:#fff}
+a{color:var(--cyan);text-decoration:none}
+a:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:2px}
+
+/* Skip link */
+.skip-link{position:absolute;top:-100px;left:16px;z-index:9999;background:var(--cyan);color:#000;font-family:var(--ds);font-size:14px;font-weight:700;padding:10px 20px;border-radius:0 0 6px 6px;text-decoration:none;transition:top .2s}
+.skip-link:focus{top:0}
+
+/* Focus ring for all interactive elements */
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(0,229,255,0.2);border-radius:4px}
+
+/* ── Side Nav ── */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:10px}
+.nav-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--txt2);cursor:pointer;transition:.3s;position:relative;display:flex;align-items:center;justify-content:center}
+.nav-dot:hover,.nav-dot.active{border-color:var(--cyan);background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.nav-dot .nav-label{position:absolute;left:20px;top:50%;transform:translateY(-50%);white-space:nowrap;font-family:var(--dm);font-size:11px;color:var(--txt2);opacity:0;pointer-events:none;transition:.2s;background:var(--card);padding:4px 10px;border-radius:4px;border:1px solid var(--border)}
+.nav-dot:hover .nav-label,.nav-dot.active .nav-label,.nav-dot:focus-visible .nav-label{opacity:1;color:var(--cyan)}
+.nav-dot:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+/* ── Progress Bar ── */
+.progress-bar{position:fixed;top:0;left:0;width:0%;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));z-index:200;transition:width .1s}
+
+/* ── Section Base ── */
+.section{min-height:100vh;padding:80px 80px 80px 72px;display:flex;align-items:center;position:relative;overflow:hidden}
+.section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,229,255,0.025) 0%,transparent 60%);pointer-events:none}
+.section-inner{width:100%;max-width:1280px;margin:0 auto}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+
+/* ── Typography ── */
+.chapter-badge{font-family:var(--dm);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.chapter-badge::before{content:'';width:24px;height:1px;background:var(--cyan)}
+h1.hero-title{font-family:var(--df);font-size:clamp(60px,8vw,110px);font-weight:700;line-height:.95;color:var(--txt-b);letter-spacing:-.02em;margin-bottom:28px}
+h1.hero-title span{color:var(--cyan)}
+h2.section-title{font-family:var(--df);font-size:clamp(40px,5vw,68px);font-weight:600;line-height:1;color:var(--txt-b);letter-spacing:-.02em;margin-bottom:24px}
+h3.sub-title{font-family:var(--ds);font-size:18px;font-weight:600;color:var(--cyan);margin-bottom:14px;letter-spacing:.02em}
+p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px}
+.highlight{color:var(--cyan)}
+.highlight-a{color:var(--amber)}
+.highlight-p{color:var(--purple)}
+.highlight-g{color:var(--green)}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.card-glow{border-color:var(--border-b);box-shadow:0 0 30px rgba(0,229,255,0.06) inset,0 0 0 1px rgba(0,229,255,0.06)}
+.insight-box{background:var(--cyan-g);border:1px solid var(--border-b);border-radius:8px;padding:16px 20px;margin-top:24px;font-size:14px;color:var(--txt)}
+.insight-box strong{color:var(--cyan);font-family:var(--dm);font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px}
+
+/* ── Tags / Badges ── */
+.tag{font-family:var(--dm);font-size:11px;padding:3px 9px;border-radius:4px;border:1px solid;display:inline-flex;align-items:center;gap:5px}
+.tag-c{color:var(--cyan);border-color:rgba(0,229,255,0.25);background:rgba(0,229,255,0.06)}
+.tag-a{color:var(--amber);border-color:rgba(255,176,32,0.25);background:rgba(255,176,32,0.06)}
+.tag-p{color:var(--purple);border-color:rgba(157,110,248,0.25);background:rgba(157,110,248,0.06)}
+.tag-g{color:var(--green);border-color:rgba(0,214,143,0.25);background:rgba(0,214,143,0.06)}
+
+/* ── Buttons ── */
+.btn{font-family:var(--ds);font-size:13px;font-weight:600;letter-spacing:.06em;padding:10px 22px;border-radius:6px;border:none;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px;min-height:40px}
+.btn-primary{background:var(--cyan);color:#000}
+.btn-primary:hover{background:#33EEFF;box-shadow:0 0 20px rgba(0,229,255,0.4)}
+.btn-primary:disabled{background:rgba(0,229,255,0.3);color:rgba(0,0,0,0.5);cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--cyan);border:1px solid rgba(0,229,255,0.3)}
+.btn-ghost:hover{background:rgba(0,229,255,0.08);border-color:var(--cyan)}
+.btn-sm{padding:7px 14px;font-size:12px;min-height:34px}
+
+/* ── SECTION 1: HERO ── */
+#s-intro{min-height:100vh;padding:0;display:block;position:relative;overflow:hidden}
+#hero-canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero-content{position:relative;z-index:1;padding:120px 80px 80px 80px;max-width:900px}
+.hero-sub{font-size:17px;color:var(--txt);max-width:540px;margin-bottom:40px;line-height:1.7}
+.hero-stats{display:flex;gap:32px;flex-wrap:wrap;margin-bottom:48px}
+.stat-item{display:flex;flex-direction:column;gap:4px}
+.stat-val{font-family:var(--dm);font-size:22px;font-weight:500;color:var(--txt-b)}
+.stat-lbl{font-family:var(--dm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2)}
+.scroll-hint{display:flex;align-items:center;gap:12px;color:var(--txt2);font-family:var(--dm);font-size:11px;letter-spacing:.1em;text-transform:uppercase;animation:bounce 2s ease-in-out infinite}
+.scroll-arrow{width:24px;height:24px;border-right:1.5px solid var(--txt2);border-bottom:1.5px solid var(--txt2);transform:rotate(45deg)}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* Typewriter */
+.typewriter-wrap{background:var(--card);border:1px solid var(--border-b);border-radius:8px;padding:16px 20px;margin-bottom:40px;font-family:var(--dm);font-size:14px;max-width:560px}
+.tw-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2);margin-bottom:8px}
+.tw-prompt{color:var(--amber);margin-bottom:4px}
+.tw-response{color:var(--txt-b);min-height:44px}
+.tw-cursor{display:inline-block;width:2px;height:14px;background:var(--cyan);animation:blink .8s step-end infinite;vertical-align:middle;margin-left:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── SECTION 2: DATA PIPELINE ── */
+.pipeline-wrap{position:relative;width:100%}
+.pipeline-node{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;cursor:pointer;transition:.3s;position:relative;overflow:hidden}
+.pipeline-node::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--txt2);transition:.3s}
+.pipeline-node:hover,.pipeline-node.active,.pipeline-node:focus-visible{border-color:var(--border-b);box-shadow:0 0 20px rgba(0,229,255,0.08)}
+.pipeline-node:hover::before,.pipeline-node.active::before,.pipeline-node:focus-visible::before{background:var(--cyan)}
+.pipeline-node.active{background:var(--card2)}
+.pipeline-node:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.pn-title{font-family:var(--ds);font-size:13px;font-weight:600;color:var(--txt-b);margin-bottom:3px}
+.pn-sub{font-family:var(--dm);font-size:11px;color:var(--txt2)}
+.pn-hint{font-family:var(--dm);font-size:10px;color:var(--txt2);opacity:.7;float:right;font-style:italic}
+.pn-detail{font-size:13px;color:var(--txt);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;line-height:1.6}
+.pipeline-node.active .pn-detail{display:block}
+.pipeline-arrow{text-align:center;color:var(--txt2);font-size:18px;line-height:1;padding:4px 0;transition:.3s;user-select:none;aria-hidden:true}
+.pipeline-arrow.lit{color:var(--cyan)}
+.data-flow{display:flex;flex-direction:column;gap:0}
+.pipeline-hint{font-family:var(--dm);font-size:11px;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.pipeline-hint::before{content:'↕';color:var(--cyan)}
+
+/* ── SECTION 3: TOKENIZER ── */
+.tokenizer-label{display:block;font-family:var(--ds);font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:8px}
+.tokenizer-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:var(--dm);font-size:13px;color:var(--txt-b);resize:vertical;min-height:90px;outline:none;transition:.2s;line-height:1.6}
+.tokenizer-input:focus{border-color:rgba(0,229,255,0.3);box-shadow:0 0 0 2px var(--bg),0 0 0 4px rgba(0,229,255,0.4)}
+.tokenizer-hint{font-family:var(--dm);font-size:11px;color:var(--txt2);margin-top:6px;margin-bottom:10px}
+.token-output{min-height:80px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-top:4px}
+.token{font-family:var(--dm);font-size:13px;padding:3px 7px;border-radius:4px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:0;position:relative}
+.token:hover,.token:focus-visible{filter:brightness(1.3);transform:translateY(-1px)}
+.token:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.token-id{display:none;position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:var(--bg);border:1px solid var(--border-b);border-radius:4px;padding:3px 7px;font-size:10px;color:var(--cyan);white-space:nowrap;z-index:10;pointer-events:none}
+.token:hover .token-id,.token:focus-visible .token-id{display:block}
+.token-stats{display:flex;gap:20px;margin-top:12px;font-family:var(--dm);font-size:12px;color:var(--txt2)}
+.token-stats span{color:var(--cyan)}
+.token-examples{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.token-example-btn{font-family:var(--dm);font-size:11px;padding:6px 13px;background:var(--card);border:1px solid var(--border);border-radius:20px;cursor:pointer;color:var(--txt);transition:.2s;min-height:32px}
+.token-example-btn:hover,.token-example-btn:focus-visible{border-color:var(--border-b);color:var(--cyan);background:var(--cyan-g)}
+
+/* Token colors */
+.tc-0{background:rgba(0,229,255,0.15);color:#7FEFFF}
+.tc-1{background:rgba(255,176,32,0.15);color:#FFD080}
+.tc-2{background:rgba(157,110,248,0.15);color:#C4A4FF}
+.tc-3{background:rgba(0,214,143,0.15);color:#5FFFCC}
+.tc-4{background:rgba(255,82,82,0.15);color:#FF9999}
+.tc-5{background:rgba(100,200,255,0.15);color:#8DD8FF}
+.tc-6{background:rgba(255,150,100,0.15);color:#FFC090}
+.tc-7{background:rgba(200,255,100,0.15);color:#D0FF80}
+.tc-8{background:rgba(255,100,200,0.15);color:#FF88D8}
+.tc-9{background:rgba(100,255,200,0.15);color:#88FFD8}
+.tc-10{background:rgba(200,100,255,0.15);color:#D088FF}
+.tc-11{background:rgba(255,220,100,0.15);color:#FFE880}
+
+/* ── SECTION 4: TRAINING ── */
+.training-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stage-btn{font-family:var(--dm);font-size:11px;padding:8px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:.2s;text-align:center;color:var(--txt);min-height:52px}
+.stage-btn:hover,.stage-btn:focus-visible{border-color:var(--border-b);color:var(--cyan)}
+.stage-btn.active{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-g)}
+.loss-canvas-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative}
+#loss-canvas{width:100%;height:200px;display:block}
+.loss-label{position:absolute;top:10px;left:20px;font-family:var(--dm);font-size:11px;color:var(--txt2)}
+.loss-val{font-family:var(--dm);font-size:28px;font-weight:500;color:var(--cyan);margin-bottom:4px}
+.loss-step{font-family:var(--dm);font-size:11px;color:var(--txt2)}
+.training-text{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:var(--dm);font-size:13px;line-height:1.7;min-height:90px}
+.training-text .coherent{color:var(--txt-b)}
+.training-text .incoherent{color:var(--txt2)}
+.transformer-visual{background:var(--card);border:1px solid var(--border-b);border-radius:12px;padding:20px;position:relative}
+
+/* ── SECTION 5: INFERENCE ── */
+.inference-demo{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.generated-seq{font-family:var(--dm);font-size:13px;line-height:1.8;min-height:56px;margin-bottom:20px;padding:12px 16px;background:var(--bg);border-radius:6px;border:1px solid var(--border)}
+.generated-seq .gen-token{display:inline;animation:tokenAppear .25s ease-out}
+@keyframes tokenAppear{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.prob-section-label{font-family:var(--dm);font-size:11px;color:var(--txt2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em}
+.prob-bars{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.prob-row{display:flex;align-items:center;gap:10px}
+.prob-token-label{font-family:var(--dm);font-size:11px;color:var(--txt);width:90px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prob-bar-bg{flex:1;height:24px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;position:relative}
+.prob-bar-fill{height:100%;border-radius:4px;transition:width .4s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
+.prob-bar-fill span{font-family:var(--dm);font-size:10px;color:rgba(0,0,0,0.75);font-weight:600}
+.prob-row.selected .prob-bar-fill{box-shadow:0 0 12px rgba(0,229,255,0.5)}
+.prob-row.selected .prob-token-label{color:var(--cyan);font-weight:600}
+.temp-label{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-family:var(--dm);font-size:12px;color:var(--txt);cursor:pointer;width:100%}
+.temp-label span:first-child{white-space:nowrap;min-width:110px}
+.temp-slider{flex:1;accent-color:var(--cyan);cursor:pointer;height:6px}
+.temp-val{color:var(--cyan);width:36px;text-align:right;font-weight:600}
+.inference-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* ── SECTION 6: BASE MODEL ── */
+.example-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px}
+.example-label{font-family:var(--dm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.example-content{font-family:var(--dm);font-size:13px;line-height:1.7;color:var(--txt)}
+.example-prompt{color:var(--amber)}
+.example-completion{color:var(--txt-b)}
+.example-hallucinated{color:var(--red)}
+.fade-trail{opacity:0.5}
+
+/* ── SECTION 7: POST-TRAINING ── */
+.convo-visual{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.convo-header{padding:12px 16px;background:var(--card2);border-bottom:1px solid var(--border);font-family:var(--dm);font-size:11px;color:var(--txt2);letter-spacing:.1em;text-transform:uppercase}
+.convo-messages{padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{border-radius:8px;padding:12px 15px;font-family:var(--dm);font-size:13px;line-height:1.6;max-width:90%}
+.msg-user{background:rgba(255,176,32,0.1);border:1px solid rgba(255,176,32,0.2);color:#FFD080;align-self:flex-end}
+.msg-assistant{background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);color:var(--txt-b)}
+.msg-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;color:var(--txt2)}
+.token-format{font-family:var(--dm);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;line-height:1.9;overflow-x:auto}
+.tok-special{color:var(--purple)}
+.tok-role{color:var(--amber)}
+.tok-text{color:var(--txt-b)}
+
+/* RLHF */
+.rlhf-row{display:flex;gap:16px;align-items:stretch;margin-bottom:16px}
+.rlhf-resp{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.rlhf-resp.preferred{border-color:rgba(0,214,143,0.3);background:rgba(0,214,143,0.04)}
+.rlhf-resp.rejected{border-color:rgba(255,82,82,0.2)}
+.rlhf-badge{font-family:var(--dm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.rlhf-text{font-family:var(--dm);font-size:12px;color:var(--txt);line-height:1.6}
+
+/* ── SECTION 8: LLM PSYCHOLOGY ── */
+.psych-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.psych-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;transition:.3s}
+.psych-card:hover{border-color:var(--border-b);box-shadow:0 0 20px rgba(0,229,255,0.06)}
+.psych-icon{font-size:28px;margin-bottom:12px}
+.psych-title{font-family:var(--ds);font-size:15px;font-weight:600;color:var(--txt-b);margin-bottom:8px}
+.psych-text{font-size:13.5px;color:var(--txt);line-height:1.7}
+
+/* ── SECTION 9: SUMMARY ── */
+.pipeline-full{display:flex;flex-direction:column;gap:16px;align-items:center;width:100%}
+.pipeline-stage{width:100%;max-width:700px;display:flex;align-items:flex-start;gap:20px;opacity:1;transform:translateY(0);transition:.5s}
+.pipeline-stage.animate-ready{opacity:0;transform:translateY(20px)}
+.pipeline-stage.animate-ready.visible{opacity:1;transform:translateY(0)}
+.ps-num{font-family:var(--dm);font-size:10px;color:var(--txt2);width:28px;flex-shrink:0;padding-top:14px;text-align:right}
+.ps-content{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 22px}
+.ps-title{font-family:var(--ds);font-size:14px;font-weight:700;margin-bottom:6px}
+.ps-desc{font-size:13px;color:var(--txt);line-height:1.6}
+.ps-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pipeline-connector{width:2px;height:20px;background:linear-gradient(to bottom,transparent,var(--border),transparent);margin-left:180px}
+
+/* ── Animations ── */
+.fade-up{opacity:1;transform:translateY(0);transition:.7s ease}
+.fade-up.animate-ready{opacity:0;transform:translateY(30px)}
+.fade-up.animate-ready.visible{opacity:1;transform:translateY(0)}
+.fade-in{opacity:1;transition:.6s ease}
+.fade-in.animate-ready{opacity:0}
+.fade-in.animate-ready.visible{opacity:1}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,0.4)}50%{box-shadow:0 0 0 6px rgba(0,229,255,0)}}
+@keyframes flow-down{0%{transform:translateY(-100%);opacity:0}50%{opacity:1}100%{transform:translateY(100%);opacity:0}}
+@keyframes node-pulse{0%,100%{r:4}50%{r:6}}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ── Mobile Bottom Nav ── */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(7,14,27,0.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.mobile-nav-inner{display:flex;min-width:max-content;padding:0 8px}
+.mobile-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 12px;cursor:pointer;border:none;background:none;color:var(--txt2);font-family:var(--dm);font-size:9px;letter-spacing:.06em;text-transform:uppercase;transition:.2s;white-space:nowrap;min-height:60px;min-width:72px;flex-shrink:0}
+.mobile-nav-btn .mnav-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--txt2);transition:.3s}
+.mobile-nav-btn.active,.mobile-nav-btn:focus-visible{color:var(--cyan)}
+.mobile-nav-btn.active .mnav-dot,.mobile-nav-btn:focus-visible .mnav-dot{background:var(--cyan);border-color:var(--cyan)}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .section{padding:60px 24px 80px 24px}
+  .side-nav{display:none}
+  .mobile-nav{display:block}
+  .two-col{grid-template-columns:1fr;gap:40px}
+  .three-col{grid-template-columns:1fr}
+  .psych-grid{grid-template-columns:1fr}
+  .hero-content{padding:80px 24px 80px}
+  h1.hero-title{font-size:52px}
+  h2.section-title{font-size:40px}
+  .training-stages{grid-template-columns:repeat(2,1fr)}
+  /* bottom nav clearance */
+  #s-summary{padding-bottom:80px}
+}
+@media(max-width:600px){
+  .rlhf-row{flex-direction:column}
+  .hero-stats{gap:20px}
+  .inference-controls{flex-direction:column;align-items:flex-start}
+}
+
+/* ── Reduced Motion ── */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .tw-cursor{animation:none;opacity:1}
+  .scroll-hint{animation:none}
+}
+
+/* divider */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);max-width:1280px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progress-bar" role="progressbar" aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Side Nav -->
+<nav class="side-nav" id="side-nav" aria-label="Chapter navigation">
+  <div class="nav-dot active" data-section="s-intro" role="button" tabindex="0" aria-label="Introduction" aria-current="true"><span class="nav-label" aria-hidden="true">Introduction</span></div>
+  <div class="nav-dot" data-section="s-data" role="button" tabindex="0" aria-label="Data Collection"><span class="nav-label" aria-hidden="true">Data Collection</span></div>
+  <div class="nav-dot" data-section="s-tokenizer" role="button" tabindex="0" aria-label="Tokenization"><span class="nav-label" aria-hidden="true">Tokenization</span></div>
+  <div class="nav-dot" data-section="s-training" role="button" tabindex="0" aria-label="Neural Network Training"><span class="nav-label" aria-hidden="true">Training</span></div>
+  <div class="nav-dot" data-section="s-inference" role="button" tabindex="0" aria-label="Inference &amp; Sampling"><span class="nav-label" aria-hidden="true">Inference</span></div>
+  <div class="nav-dot" data-section="s-basemodel" role="button" tabindex="0" aria-label="Base Model"><span class="nav-label" aria-hidden="true">Base Model</span></div>
+  <div class="nav-dot" data-section="s-posttraining" role="button" tabindex="0" aria-label="Post-Training"><span class="nav-label" aria-hidden="true">Post-Training</span></div>
+  <div class="nav-dot" data-section="s-psychology" role="button" tabindex="0" aria-label="LLM Psychology"><span class="nav-label" aria-hidden="true">LLM Psychology</span></div>
+  <div class="nav-dot" data-section="s-summary" role="button" tabindex="0" aria-label="Full Pipeline Summary"><span class="nav-label" aria-hidden="true">Full Pipeline</span></div>
+</nav>
+
+<!-- ━━━━━━━━ SECTION 1: HERO ━━━━━━━━ -->
+<section id="s-intro" class="section" aria-label="Introduction">
+  <canvas id="hero-canvas" role="img" aria-label="Animated neural network visualization" aria-hidden="true"></canvas>
+  <div class="hero-content" id="main-content">
+    <div class="chapter-badge" aria-hidden="true">A Visual Deep Dive</div>
+    <h1 class="hero-title">How LLMs<br><span>Actually</span> Work</h1>
+    <div class="typewriter-wrap" aria-label="Example LLM conversation">
+      <div class="tw-label" aria-hidden="true">Live LLM Response</div>
+      <div class="tw-prompt">Human: What is behind this text box?</div>
+      <div class="tw-response" id="tw-response" aria-live="polite" aria-atomic="true"><span class="tw-cursor" aria-hidden="true"></span></div>
+    </div>
+    <p class="hero-sub">A complete walkthrough of how large language models like ChatGPT are built — from raw internet text to a conversational assistant. Based on Andrej Karpathy's technical deep dive.</p>
+    <dl class="hero-stats">
+      <div class="stat-item"><dt class="stat-lbl">Training Tokens</dt><dd class="stat-val">15T</dd></div>
+      <div class="stat-item"><dt class="stat-lbl">Parameters</dt><dd class="stat-val">405B</dd></div>
+      <div class="stat-item"><dt class="stat-lbl">Text Data</dt><dd class="stat-val">44 TB</dd></div>
+      <div class="stat-item"><dt class="stat-lbl">Token Vocabulary</dt><dd class="stat-val">100K</dd></div>
+    </dl>
+    <div class="scroll-hint" aria-hidden="true"><div class="scroll-arrow"></div>Scroll to explore</div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 2: DATA COLLECTION ━━━━━━━━ -->
+<section id="s-data" class="section" aria-label="Data Collection">
+  <div class="section-inner two-col">
+    <div class="col-text fade-up">
+      <div class="chapter-badge" aria-hidden="true">Chapter 1 · Pre-Training · Stage 1</div>
+      <h2 class="section-title">Downloading<br>the Internet</h2>
+      <p class="body-text">The first step is collecting an enormous amount of text. Organizations like <span class="highlight">Common Crawl</span> have been crawling the web since 2007 — indexing 2.7 billion pages by 2024. This raw data is then filtered into a high-quality dataset like <span class="highlight">FineWeb</span>.</p>
+      <p class="body-text">The goal: <em>large quantity</em> of <em>high quality</em>, <em>diverse</em> documents. After aggressive filtering, you end up with about <span class="highlight-a">44 terabytes</span> — roughly what fits on a single hard drive — representing ~15 trillion tokens.</p>
+      <div class="insight-box">
+        <strong>Key Insight</strong>
+        The quality and diversity of this training data has more impact on the final model than almost anything else. Garbage in, garbage out — but at a trillion-token scale.
+      </div>
+    </div>
+    <div class="col-text fade-up" style="animation-delay:.15s">
+      <p class="pipeline-hint">Click any stage to read more detail</p>
+      <div class="data-flow" id="pipeline-flow" role="list" aria-label="Data processing pipeline stages">
+        <div class="pipeline-node active" data-stage="0" role="button" tabindex="0" aria-expanded="true" aria-label="Common Crawl — click to expand">
+          <div class="pn-title">🌐 Common Crawl</div>
+          <div class="pn-sub">2.7B web pages · Raw HTML · Since 2007</div>
+          <div class="pn-detail">A non-profit organization that crawls the web and freely provides its data. Their bots follow links from seed pages, recursively indexing the internet. The raw archive is petabytes of gzip'd WARC files containing raw HTML.</div>
+        </div>
+        <div class="pipeline-arrow" id="pa-0" aria-hidden="true">↓</div>
+        <div class="pipeline-node" data-stage="1" role="button" tabindex="0" aria-expanded="false" aria-label="URL Filtering — click to expand">
+          <div class="pn-title">🚫 URL Filtering</div>
+          <div class="pn-sub">Blocklists · Malware · Spam · Adult content</div>
+          <div class="pn-detail">Block-lists of known malware sites, spam networks, adult content, marketing pages, and low-quality domains are applied. Entire domains can be removed. This is the cheapest filter so it runs first.</div>
+        </div>
+        <div class="pipeline-arrow" id="pa-1" aria-hidden="true">↓</div>
+        <div class="pipeline-node" data-stage="2" role="button" tabindex="0" aria-expanded="false" aria-label="Text Extraction — click to expand">
+          <div class="pn-title">📄 Text Extraction</div>
+          <div class="pn-sub">HTML → clean text · Remove navigation &amp; CSS</div>
+          <div class="pn-detail">Raw HTML contains &lt;div&gt; tags, CSS, JavaScript, navigation menus, and ads. Parsers extract just the meaningful text content. This is harder than it sounds — heuristics decide what's "content" vs "chrome".</div>
+        </div>
+        <div class="pipeline-arrow" id="pa-2" aria-hidden="true">↓</div>
+        <div class="pipeline-node" data-stage="3" role="button" tabindex="0" aria-expanded="false" aria-label="Language Filtering — click to expand">
+          <div class="pn-title">🌍 Language Filtering</div>
+          <div class="pn-sub">Keep pages ≥65% English · Language classifier</div>
+          <div class="pn-detail">A language classifier estimates the language of each page. Pages with less than 65% target-language content are dropped. This is a design decision — filter aggressively for one language or train multilingual.</div>
+        </div>
+        <div class="pipeline-arrow" id="pa-3" aria-hidden="true">↓</div>
+        <div class="pipeline-node" data-stage="4" role="button" tabindex="0" aria-expanded="false" aria-label="Deduplication — click to expand">
+          <div class="pn-title">♻️ Deduplication</div>
+          <div class="pn-sub">Exact &amp; fuzzy matching · Reduce repetition</div>
+          <div class="pn-detail">Identical or near-identical pages appear millions of times on the internet (copied articles, boilerplate). Training on the same text repeatedly causes memorization. Dedup uses MinHash and exact-match techniques to remove duplicates.</div>
+        </div>
+        <div class="pipeline-arrow" id="pa-4" aria-hidden="true">↓</div>
+        <div class="pipeline-node" data-stage="5" role="button" tabindex="0" aria-expanded="false" aria-label="PII Removal — click to expand">
+          <div class="pn-title">🔒 PII Removal</div>
+          <div class="pn-sub">Names · Addresses · SSNs · Emails</div>
+          <div class="pn-detail">Personally Identifiable Information is detected and either redacted or the page is dropped. Regex patterns and ML classifiers find phone numbers, emails, Social Security numbers, physical addresses, and named individuals.</div>
+        </div>
+        <div class="pipeline-arrow" id="pa-5" aria-hidden="true">↓</div>
+        <div class="pipeline-node" style="border-color:rgba(0,214,143,0.3);background:rgba(0,214,143,0.04)" data-stage="6" role="button" tabindex="0" aria-expanded="false" aria-label="FineWeb Dataset result — click to expand">
+          <div class="pn-title" style="color:var(--green)">✅ FineWeb Dataset</div>
+          <div class="pn-sub">44 TB · 15 Trillion tokens · High quality</div>
+          <div class="pn-detail">The final filtered dataset. Articles about tornadoes in 2012, medical facts, history, code, recipes, science papers — the full breadth of human knowledge expressed in text. This becomes the training corpus.</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:14px" id="run-pipeline-btn">▶ Animate Pipeline</button>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 3: TOKENIZATION ━━━━━━━━ -->
+<section id="s-tokenizer" class="section" aria-label="Tokenization">
+  <div class="section-inner">
+    <div class="two-col" style="margin-bottom:48px">
+      <div class="fade-up">
+        <div class="chapter-badge">Chapter 1 · Pre-Training · Stage 2</div>
+        <h2 class="section-title">Tokenization</h2>
+        <p class="body-text">Neural networks can't process raw text — they need numbers. The solution is <span class="highlight">tokenization</span>: breaking text into "tokens" (sub-word chunks) and assigning each an ID.</p>
+        <p class="body-text">GPT-4 uses a vocabulary of <span class="highlight">100,277 tokens</span>, built via the <span class="highlight-a">Byte Pair Encoding (BPE)</span> algorithm. BPE starts with individual bytes (256 symbols), then iteratively merges the most frequent adjacent pairs — compressing the sequence length while expanding the vocabulary.</p>
+        <div class="insight-box">
+          <strong>Why not just use words?</strong>
+          Words have infinite variants. "run", "running", "runner" would be 3 separate entries. Subword tokens share roots: "run" + "ning", "run" + "ner". This also handles new words, typos, and multiple languages efficiently.
+        </div>
+      </div>
+      <div class="fade-up" style="animation-delay:.15s">
+        <h3 class="sub-title">BPE in Action</h3>
+        <svg id="bpe-svg" viewBox="0 0 380 280" width="100%" style="background:var(--card);border:1px solid var(--border);border-radius:10px;display:block" role="img" aria-labelledby="bpe-title" aria-describedby="bpe-desc"><title id="bpe-title">BPE Tokenization Steps</title><desc id="bpe-desc">Interactive diagram showing how Byte Pair Encoding progressively merges characters into subword tokens</desc></svg>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+          <button class="btn btn-ghost btn-sm" id="bpe-advance-btn" aria-label="Advance to next BPE step">Next Step →</button>
+          <span id="bpe-step-label" style="font-family:var(--dm);font-size:11px;color:var(--txt2)">Step 1 of 5</span>
+        </div>
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.2s">
+      <h3 class="sub-title" style="margin-bottom:12px" id="tokenizer-heading">Live Tokenizer</h3>
+      <p class="tokenizer-hint">Try the examples below or type your own text. <strong>Hover (or focus) any token</strong> to see its ID.</p>
+      <div class="token-examples" id="token-examples" role="group" aria-label="Example texts to tokenize">
+        <button class="token-example-btn" data-text="Hello, world!" aria-label="Load example: Hello world">Hello world</button>
+        <button class="token-example-btn" data-text="Large language models like ChatGPT work by predicting the next token." aria-label="Load example: LLM description">LLM description</button>
+        <button class="token-example-btn" data-text="tokenization is the process of converting text into numerical tokens" aria-label="Load example: Tokenization">Tokenization</button>
+        <button class="token-example-btn" data-text="1234567890" aria-label="Load example: Numbers">Numbers</button>
+        <button class="token-example-btn" data-text="pre-training post-training fine-tuning self-attention transformer" aria-label="Load example: Compound words">Compound words</button>
+      </div>
+      <label class="tokenizer-label" for="tokenizer-input">Enter text to tokenize</label>
+      <textarea class="tokenizer-input" id="tokenizer-input" placeholder="Type anything to tokenize it..." aria-describedby="tokenizer-heading token-stats-region">Large language models predict the next token in a sequence.</textarea>
+      <div class="token-output" id="token-output" aria-label="Tokenized output" aria-live="polite"></div>
+      <div class="token-stats" id="token-stats-region" role="status" aria-live="polite">
+        <div>Tokens: <span id="token-count">0</span></div>
+        <div>Characters: <span id="char-count">0</span></div>
+        <div>Ratio: <span id="ratio">0</span> chars/token</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 4: NEURAL NETWORK TRAINING ━━━━━━━━ -->
+<section id="s-training" class="section" aria-label="Neural Network Training">
+  <div class="section-inner">
+    <div class="two-col" style="margin-bottom:48px">
+      <div class="fade-up">
+        <div class="chapter-badge">Chapter 1 · Pre-Training · Stage 3</div>
+        <h2 class="section-title">Training the<br>Neural Network</h2>
+        <p class="body-text">The Transformer neural network is initialized with random parameters — billions of <span class="highlight">"knobs"</span>. Training adjusts these knobs so the network gets better at predicting the next token in any sequence.</p>
+        <p class="body-text">Every training step: sample a window of tokens → feed to network → compare prediction to actual next token → nudge all parameters slightly in the right direction. Repeat <span class="highlight-a">billions of times</span>.</p>
+        <p class="body-text">The <span class="highlight">loss</span> — a single number measuring prediction error — falls steadily as the model learns the statistical patterns of human language.</p>
+        <div class="insight-box">
+          <strong>Scale</strong>
+          GPT-2 (2019): 1.6B params, 100B tokens, ~$40K to train. Today: same quality for ~$100. Llama 3: 405B params, 15T tokens. Modern frontier models: hundreds of billions of parameters, trillions of tokens.
+        </div>
+      </div>
+      <div class="fade-up" style="animation-delay:.15s">
+        <h3 class="sub-title">Transformer Architecture</h3>
+        <svg id="transformer-svg" viewBox="0 0 360 340" width="100%" style="background:var(--card);border:1px solid var(--border);border-radius:10px;display:block;margin-bottom:16px" role="img" aria-label="Transformer architecture diagram showing data flow from input tokens through embedding, attention, and feed-forward layers to output logits"><title>Transformer Architecture</title></svg>
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.2s">
+      <div class="two-col" style="gap:32px">
+        <div>
+          <p style="font-family:var(--dm);font-size:11px;color:var(--txt2);margin-bottom:10px">Select a training stage to see model output quality</p>
+          <div class="training-stages" id="training-stages" role="group" aria-label="Training step selector">
+            <button class="stage-btn" data-step="1" aria-pressed="false">Step 1<br><span style="color:var(--red)">Loss: 11.2</span></button>
+            <button class="stage-btn active" data-step="500" aria-pressed="true">Step 500<br><span style="color:var(--amber)">Loss: 4.8</span></button>
+            <button class="stage-btn" data-step="5000" aria-pressed="false">Step 5K<br><span style="color:var(--purple)">Loss: 3.1</span></button>
+            <button class="stage-btn" data-step="32000" aria-pressed="false">Step 32K<br><span style="color:var(--green)">Loss: 2.4</span></button>
+          </div>
+          <div class="loss-canvas-wrap">
+            <div class="loss-label">Training Loss ↓</div>
+            <canvas id="loss-canvas"></canvas>
+          </div>
+          <div style="display:flex;gap:20px;margin-top:14px">
+            <div><div class="loss-val" id="current-loss">4.8</div><div class="loss-step">Cross-entropy loss</div></div>
+            <div><div class="loss-val" id="current-step" style="color:var(--amber)">500</div><div class="loss-step">Training step</div></div>
+          </div>
+        </div>
+        <div>
+          <h3 class="sub-title" style="margin-bottom:12px">Model Output at This Stage</h3>
+          <div class="training-text" id="training-text-output" aria-live="polite" aria-label="Model text output at selected training step">
+            <span class="incoherent">the model has learn</span><span class="coherent">ing</span> <span class="incoherent">but confus</span><span class="coherent">tion</span> <span class="incoherent">still</span> <span class="coherent">the</span> <span class="incoherent">wqp mxr</span> <span class="coherent">model</span> <span class="incoherent">bns</span> <span class="coherent">to predict</span>...
+          </div>
+          <div class="insight-box" style="margin-top:14px">
+            <strong>What the model is learning</strong>
+            At step 1: pure noise. By step 500: local coherence appears. By step 32K: fluent English. The model is learning grammar, facts, reasoning patterns — all implicitly from token prediction.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 5: INFERENCE ━━━━━━━━ -->
+<section id="s-inference" class="section" aria-label="Inference and Token Sampling">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 1 · Pre-Training · Stage 4</div>
+      <h2 class="section-title">Inference &<br>Token Sampling</h2>
+      <p class="body-text">Once trained, the network generates text autoregressively: feed a sequence of tokens → get a <span class="highlight">probability distribution</span> over all 100K possible next tokens → sample one → append → repeat.</p>
+      <p class="body-text">This process is <span class="highlight-a">stochastic</span> — the same prompt generates different outputs every time because we're flipping a biased coin. Higher-probability tokens are more likely but not guaranteed to be chosen.</p>
+      <p class="body-text"><span class="highlight">Temperature</span> controls randomness. Low temperature (0.1) → model always picks the top token. High temperature (2.0) → uniform chaos. 0.7–1.0 is the sweet spot for coherent-but-creative text.</p>
+      <div class="insight-box">
+        <strong>Key Mental Model</strong>
+        The model doesn't "think" about what to say. It computes a probability distribution over all possible next tokens and samples from it. Every word is a coin flip — just a very informed one.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title" style="margin-bottom:14px" id="sampling-heading">Token Sampling Demo</h3>
+      <div class="inference-demo" aria-labelledby="sampling-heading">
+        <p style="font-family:var(--dm);font-size:11px;color:var(--txt2);margin-bottom:12px">Watch the model choose the next word. Each bar shows the probability of a candidate token.</p>
+        <div class="generated-seq" id="gen-seq" aria-live="polite" aria-label="Generated token sequence">The sky appears blue</div>
+        <label class="temp-label" for="temp-slider">
+          <span>Temperature <span style="color:var(--txt2);font-size:10px">(randomness)</span></span>
+          <input type="range" class="temp-slider" id="temp-slider" min="0.1" max="2.0" step="0.1" value="0.8" aria-label="Temperature: controls randomness. Low=predictable, High=random">
+          <span class="temp-val" id="temp-val" aria-live="polite">0.8</span>
+        </label>
+        <div class="prob-section-label" id="prob-label">Next token candidates</div>
+        <div class="prob-bars" id="prob-bars" role="list" aria-labelledby="prob-label"></div>
+        <div class="inference-controls">
+          <button class="btn btn-primary btn-sm" id="sample-btn" aria-describedby="sample-info">Sample Next Token</button>
+          <button class="btn btn-ghost btn-sm" id="reset-gen-btn" aria-label="Reset generated sequence to start">Reset</button>
+          <span style="font-family:var(--dm);font-size:11px;color:var(--txt2)" id="sample-info" aria-live="polite" role="status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 6: BASE MODEL ━━━━━━━━ -->
+<section id="s-basemodel" class="section" aria-label="Base Model Behavior">
+  <div class="section-inner">
+    <div class="two-col">
+      <div class="fade-up">
+        <div class="chapter-badge">Chapter 2 · The Base Model</div>
+        <h2 class="section-title">The Internet<br>Simulator</h2>
+        <p class="body-text">After pre-training, you have a <span class="highlight">base model</span> — a sophisticated autocomplete engine. It's not an assistant. It doesn't answer questions. It <em>continues token sequences</em> based on what it saw on the internet.</p>
+        <p class="body-text">Give it a Wikipedia sentence and it'll complete it from memory. Ask it "What is 2+2?" and it might give you a math textbook page, a quiz answer key, or go off on a tangent — whatever was statistically common in its training data.</p>
+        <p class="body-text">The base model's knowledge lives in its <span class="highlight-a">405 billion parameters</span> — a lossy compression of the internet, like a zip file that approximates rather than perfectly stores information.</p>
+      </div>
+      <div class="fade-up" style="animation-delay:.15s">
+        <h3 class="sub-title" style="margin-bottom:14px">Base Model Behavior</h3>
+        <div class="example-card">
+          <div class="example-label"><span class="tag tag-a">Few-Shot Prompting</span></div>
+          <div class="example-content">
+            <div class="example-prompt">Hello: Bonjour | Cat: Chat | Dog: Chien | Teacher:</div>
+            <div class="example-completion">→ Professeur &nbsp;<span style="color:var(--green);font-size:11px">✓ correct</span></div>
+          </div>
+        </div>
+        <div class="example-card">
+          <div class="example-label"><span class="tag tag-p">Memorization</span></div>
+          <div class="example-content">
+            <div class="example-prompt">Zebras (/ˈzɛbrə, ˈziːbrə/) are African equines with distinctive...</div>
+            <div class="example-completion">...black-and-white striped coats. There are three living species: the Grévy's zebra, plains zebra, and mountain zebra...</div>
+            <div style="margin-top:8px;font-size:11px;color:var(--txt2)">↑ Verbatim Wikipedia recall from weights</div>
+          </div>
+        </div>
+        <div class="example-card">
+          <div class="example-label"><span class="tag tag-g">Hallucination</span></div>
+          <div class="example-content">
+            <div class="example-prompt">The Republican Party nominated Trump and [running mate] in the 2024 election against...</div>
+            <div class="example-hallucinated">→ ...Mike Pence, facing Hillary Clinton and Tim Kaine...</div>
+            <div style="margin-top:4px" class="example-hallucinated">→ ...Ron DeSantis, against Joe Biden and Kamala Harris...</div>
+            <div style="margin-top:8px;font-size:11px;color:var(--txt2)">↑ Knowledge cutoff → plausible confabulation</div>
+          </div>
+        </div>
+        <div class="insight-box">
+          <strong>In-Context Learning</strong>
+          Base models can perform translation, classification, and Q&amp;A via few-shot prompts — no fine-tuning needed. The model infers the task from the pattern of examples in its context window.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 7: POST-TRAINING ━━━━━━━━ -->
+<section id="s-posttraining" class="section" aria-label="Post-Training: SFT and RLHF">
+  <div class="section-inner">
+    <div class="fade-up" style="margin-bottom:40px">
+      <div class="chapter-badge">Chapter 3 · Post-Training</div>
+      <h2 class="section-title">Building the Assistant</h2>
+      <p class="body-text" style="max-width:680px">The base model is a token simulator. To turn it into a <em>helpful assistant</em>, we need post-training — a much cheaper but equally critical stage. This is where the model learns <span class="highlight">conversations</span>.</p>
+    </div>
+    <div class="two-col">
+      <div class="fade-up">
+        <h3 class="sub-title">Supervised Fine-Tuning (SFT)</h3>
+        <p class="body-text">Human labelers create a dataset of ideal conversations, following detailed labeling instructions: be <span class="highlight">helpful</span>, be <span class="highlight-a">truthful</span>, be <span class="highlight-g">harmless</span>. The model is then trained on these conversations — not from scratch, but by continuing to adjust the pre-trained weights on this new data.</p>
+        <p class="body-text">Modern SFT datasets (like UltraChat) have millions of conversations — mostly synthetic (LLM-generated), with human review. The model learns by imitation: it adopts the persona of the ideal assistant reflected in the data.</p>
+        <div class="convo-visual fade-in">
+          <div class="convo-header">Training Conversation Example</div>
+          <div class="convo-messages">
+            <div class="msg msg-user"><div class="msg-label">Human</div>What is 2 + 2?</div>
+            <div class="msg msg-assistant"><div class="msg-label">Assistant</div>2 + 2 = 4. Is there anything else you'd like help with?</div>
+            <div class="msg msg-user"><div class="msg-label">Human</div>What if it was multiplication instead?</div>
+            <div class="msg msg-assistant"><div class="msg-label">Assistant</div>2 × 2 = 4 as well — the same result! For multiplication, 2 × 2 means adding 2 to itself once, giving you 4.</div>
+          </div>
+        </div>
+        <div class="insight-box" style="margin-top:16px">
+          <strong>What you're really talking to</strong>
+          ChatGPT is a statistical simulation of the human labelers OpenAI hired — experts following labeling instructions. When it answers a coding question, it's imitating what a skilled developer-labeler would write.
+        </div>
+      </div>
+      <div class="fade-up" style="animation-delay:.15s">
+        <h3 class="sub-title" style="margin-bottom:14px">Conversation Token Format</h3>
+        <p class="body-text">Every conversation must be encoded as a <em>flat token sequence</em>. Special tokens mark the structure:</p>
+        <div class="token-format">
+<span class="tok-special">&lt;|im_start|&gt;</span><span class="tok-role">user</span><span class="tok-special">&lt;|im_sep|&gt;</span>
+<span class="tok-text">What is 2 + 2?</span>
+<span class="tok-special">&lt;|im_end|&gt;</span>
+<span class="tok-special">&lt;|im_start|&gt;</span><span class="tok-role">assistant</span><span class="tok-special">&lt;|im_sep|&gt;</span>
+<span class="tok-text">2 + 2 = 4.</span>
+<span class="tok-special">&lt;|im_end|&gt;</span>
+        </div>
+        <p class="body-text" style="margin-top:16px">Then RLHF refines the assistant's behavior further:</p>
+        <h3 class="sub-title">RLHF — Reinforcement Learning<br>from Human Feedback</h3>
+        <p class="body-text">Human raters rank multiple model responses. A <span class="highlight">reward model</span> learns to predict human preferences. The language model is then trained via reinforcement learning to generate responses the reward model scores highly.</p>
+        <div class="rlhf-row">
+          <div class="rlhf-resp preferred">
+            <div class="rlhf-badge" style="color:var(--green)">✓ Preferred</div>
+            <div class="rlhf-text">Here are the top 5 landmarks in Paris: 1) Eiffel Tower — iconic iron lattice structure... 2) The Louvre — world's largest art museum...</div>
+          </div>
+          <div class="rlhf-resp rejected">
+            <div class="rlhf-badge" style="color:var(--red)">✗ Rejected</div>
+            <div class="rlhf-text">Paris has many landmarks. You should visit the Eiffel Tower. There is also a museum called the Louvre. Also Notre-Dame Cathedral is there...</div>
+          </div>
+        </div>
+        <div class="insight-box">
+          <strong>Why RLHF matters</strong>
+          SFT teaches the model what to say. RLHF teaches it <em>how to say it well</em> — making responses more helpful, better structured, more honest, and less likely to hallucinate.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 8: LLM PSYCHOLOGY ━━━━━━━━ -->
+<section id="s-psychology" class="section" aria-label="LLM Psychology">
+  <div class="section-inner">
+    <div class="fade-up" style="margin-bottom:40px">
+      <div class="chapter-badge">Chapter 4 · LLM Psychology</div>
+      <h2 class="section-title">Cognitive Quirks<br>of Language Models</h2>
+      <p class="body-text" style="max-width:680px">Understanding <em>why</em> LLMs behave the way they do requires thinking about their psychology — the emergent properties of being trained to statistically imitate human text.</p>
+    </div>
+    <div class="psych-grid fade-up">
+      <div class="psych-card">
+        <div class="psych-icon">🌀</div>
+        <div class="psych-title">Hallucination</div>
+        <div class="psych-text">Models confabulate confidently because training data always has confident answers. "Who is Orson Kovats?" gets a made-up biography because the training distribution of "who is X?" questions is always followed by confident replies — even for fictional names. Fix: add "I don't know" examples for questions the model gets wrong consistently.</div>
+      </div>
+      <div class="psych-card">
+        <div class="psych-icon">🧠</div>
+        <div class="psych-title">Two Types of Memory</div>
+        <div class="psych-text"><strong style="color:var(--cyan)">Parameters = long-term memory.</strong> Everything the model learned during training — vast but vague, like something you read months ago. <strong style="color:var(--amber)">Context window = working memory.</strong> Text in the current conversation — precise, directly accessible. Always paste important info into context rather than relying on the model to "remember."</div>
+      </div>
+      <div class="psych-card">
+        <div class="psych-icon">🔧</div>
+        <div class="psych-title">Tool Use</div>
+        <div class="psych-text">Models can emit special tokens that trigger external tools: <span style="color:var(--purple);font-family:var(--dm);font-size:12px">&lt;search&gt;query&lt;/search&gt;</span>. The program pauses generation, executes the search, stuffs the results into the context window, then resumes. The model "looks things up" the same way you do — by refreshing working memory.</div>
+      </div>
+      <div class="psych-card">
+        <div class="psych-icon">🪞</div>
+        <div class="psych-title">No Persistent Self</div>
+        <div class="psych-text">Each conversation starts fresh — no memory of prior chats. The model "boots up," processes tokens, then shuts off. It has no stable identity. When it says "I'm ChatGPT by OpenAI," that's just the most statistically likely answer from training data — not genuine self-knowledge.</div>
+      </div>
+      <div class="psych-card">
+        <div class="psych-icon">📊</div>
+        <div class="psych-title">Stochastic Token Tumbler</div>
+        <div class="psych-text">The model doesn't "decide" what to say. It computes probability distributions and samples. Run the same prompt 10 times and get 10 different outputs — all plausible, all drawn from the same learned distribution. Temperature controls how broadly it samples from this distribution.</div>
+      </div>
+      <div class="psych-card">
+        <div class="psych-icon">📚</div>
+        <div class="psych-title">Knowledge Cutoff</div>
+        <div class="psych-text">Training data has a date. The model genuinely doesn't know what happened after that. Ask about recent events and it will hallucinate — not from malice but from the same mechanism that answers every question: predict the most likely continuation of the token sequence.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ SECTION 9: FULL PIPELINE ━━━━━━━━ -->
+<section id="s-summary" class="section" aria-label="Full Pipeline Summary">
+  <div class="section-inner">
+    <div class="fade-up" style="margin-bottom:48px;text-align:center">
+      <div class="chapter-badge" style="justify-content:center">Full Pipeline</div>
+      <h2 class="section-title" style="text-align:center">From Text to<br>Assistant</h2>
+      <p class="body-text" style="max-width:560px;margin:0 auto">The complete journey from raw web crawl to the ChatGPT you interact with — across two major stages, months of compute, and billions of parameters.</p>
+    </div>
+    <div class="pipeline-full" id="pipeline-full">
+      <div class="pipeline-stage" style="transition-delay:.0s">
+        <div class="ps-num">01</div>
+        <div class="ps-content" style="border-left:3px solid var(--cyan)">
+          <div class="ps-title" style="color:var(--cyan)">Data Collection</div>
+          <div class="ps-desc">Common Crawl + other sources → URL filtering → text extraction → language filtering → deduplication → PII removal → 44 TB of curated text (FineWeb, etc.)</div>
+          <div class="ps-tags"><span class="tag tag-c">Common Crawl</span><span class="tag tag-c">FineWeb</span><span class="tag tag-c">44 TB</span><span class="tag tag-c">15T tokens</span></div>
+        </div>
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-stage" style="transition-delay:.1s">
+        <div class="ps-num">02</div>
+        <div class="ps-content" style="border-left:3px solid var(--amber)">
+          <div class="ps-title" style="color:var(--amber)">Tokenization</div>
+          <div class="ps-desc">Text → UTF-8 bytes → Byte Pair Encoding → 15 trillion token sequence. Each token is a sub-word chunk with an integer ID. GPT-4 vocabulary: 100,277 tokens.</div>
+          <div class="ps-tags"><span class="tag tag-a">BPE</span><span class="tag tag-a">100K vocab</span><span class="tag tag-a">Sub-word units</span></div>
+        </div>
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-stage" style="transition-delay:.2s">
+        <div class="ps-num">03</div>
+        <div class="ps-content" style="border-left:3px solid var(--purple)">
+          <div class="ps-title" style="color:var(--purple)">Pre-Training</div>
+          <div class="ps-desc">Transformer neural network trained to predict the next token. Billions of parameters tuned via gradient descent. Months of compute on thousands of GPUs. Loss decreases from ~11 to ~2.4.</div>
+          <div class="ps-tags"><span class="tag tag-p">Transformer</span><span class="tag tag-p">405B params</span><span class="tag tag-p">$millions compute</span><span class="tag tag-p">3 months</span></div>
+        </div>
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-stage" style="transition-delay:.3s">
+        <div class="ps-num">04</div>
+        <div class="ps-content" style="border-left:3px solid #5A7090">
+          <div class="ps-title" style="color:var(--txt2)">Base Model</div>
+          <div class="ps-desc">An internet document simulator. Can autocomplete, few-shot prompt, and regurgitate memorized facts. NOT an assistant — just a very sophisticated token predictor.</div>
+          <div class="ps-tags"><span class="tag" style="color:var(--txt2);border-color:var(--border)">GPT-2</span><span class="tag" style="color:var(--txt2);border-color:var(--border)">Llama 3 base</span><span class="tag" style="color:var(--txt2);border-color:var(--border)">Token autocomplete</span></div>
+        </div>
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-stage" style="transition-delay:.4s">
+        <div class="ps-num">05</div>
+        <div class="ps-content" style="border-left:3px solid var(--green)">
+          <div class="ps-title" style="color:var(--green)">Supervised Fine-Tuning (SFT)</div>
+          <div class="ps-desc">Base model retrained on human-labeled conversations. Labelers write ideal responses following company guidelines: helpful, truthful, harmless. Modern datasets: millions of synthetic + human-curated conversations. Duration: hours (not months).</div>
+          <div class="ps-tags"><span class="tag tag-g">Human labelers</span><span class="tag tag-g">InstructGPT</span><span class="tag tag-g">UltraChat</span><span class="tag tag-g">~3 hours</span></div>
+        </div>
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-stage" style="transition-delay:.5s">
+        <div class="ps-num">06</div>
+        <div class="ps-content" style="border-left:3px solid var(--red)">
+          <div class="ps-title" style="color:var(--red)">RLHF</div>
+          <div class="ps-desc">Human raters rank model outputs. A reward model learns these preferences. The language model is optimized via reinforcement learning to score higher — producing responses that are more helpful, better structured, and more honest.</div>
+          <div class="ps-tags"><span class="tag tag-g" style="color:var(--red);border-color:rgba(255,82,82,.25);background:var(--red-d)">Reward Model</span><span class="tag tag-g" style="color:var(--red);border-color:rgba(255,82,82,.25);background:var(--red-d)">PPO</span><span class="tag tag-g" style="color:var(--red);border-color:rgba(255,82,82,.25);background:var(--red-d)">Human preferences</span></div>
+        </div>
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-stage" style="transition-delay:.6s">
+        <div class="ps-num">07</div>
+        <div class="ps-content" style="border-left:3px solid var(--cyan);background:linear-gradient(135deg,rgba(0,229,255,0.06),transparent)">
+          <div class="ps-title" style="color:var(--cyan)">🤖 ChatGPT / Claude / Gemini</div>
+          <div class="ps-desc">The final assistant. A statistical simulation of expert human labelers, backed by a vast compressed representation of the internet. Not magic — but remarkable engineering at enormous scale.</div>
+          <div class="ps-tags"><span class="tag tag-c">Conversational</span><span class="tag tag-c">Helpful · Truthful · Harmless</span><span class="tag tag-c">Tool use</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="fade-up" style="text-align:center;margin-top:60px">
+      <p class="body-text" style="max-width:500px;margin:0 auto;color:var(--txt2)">Built from Andrej Karpathy's "Intro to Large Language Models" lecture. The most important takeaway: every word generated is a probabilistic sample — a biased coin flip, at 100K-way scale, billions of times.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━ MOBILE BOTTOM NAV ━━━━━━━━ -->
+<nav class="mobile-nav" aria-label="Chapter navigation">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-btn active" data-section="s-intro" aria-current="true"><div class="mnav-dot"></div>Intro</button>
+    <button class="mobile-nav-btn" data-section="s-data"><div class="mnav-dot"></div>Data</button>
+    <button class="mobile-nav-btn" data-section="s-tokenizer"><div class="mnav-dot"></div>Tokens</button>
+    <button class="mobile-nav-btn" data-section="s-training"><div class="mnav-dot"></div>Training</button>
+    <button class="mobile-nav-btn" data-section="s-inference"><div class="mnav-dot"></div>Inference</button>
+    <button class="mobile-nav-btn" data-section="s-basemodel"><div class="mnav-dot"></div>Base Model</button>
+    <button class="mobile-nav-btn" data-section="s-posttraining"><div class="mnav-dot"></div>Post-Train</button>
+    <button class="mobile-nav-btn" data-section="s-psychology"><div class="mnav-dot"></div>Psychology</button>
+    <button class="mobile-nav-btn" data-section="s-summary"><div class="mnav-dot"></div>Summary</button>
+  </div>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════════
+// HERO CANVAS — Neural Network Particle Animation
+// ═══════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], edges = [], animId;
+  const N = 55, MAX_DIST = 130;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function init() {
+    resize();
+    nodes = Array.from({length: N}, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35,
+      r: 1.5 + Math.random() * 2, phase: Math.random() * Math.PI * 2
+    }));
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    // Update positions
+    for (const n of nodes) {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    }
+    // Draw edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < MAX_DIST) {
+          const alpha = (1 - dist/MAX_DIST) * 0.18;
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(0,229,255,${alpha})`;
+          ctx.lineWidth = .5;
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    // Draw nodes
+    for (const n of nodes) {
+      const pulse = .7 + .3 * Math.sin(t * .001 + n.phase);
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r * pulse, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,229,255,${0.4 * pulse})`;
+      ctx.fill();
+    }
+    animId = requestAnimationFrame(draw);
+  }
+
+  init();
+  requestAnimationFrame(draw);
+  window.addEventListener('resize', () => { resize(); });
+})();
+
+// ═══════════════════════════════════════════════
+// TYPEWRITER EFFECT
+// ═══════════════════════════════════════════════
+(function(){
+  const el = document.getElementById('tw-response');
+  const messages = [
+    "It's a large language model — a neural network with 405 billion parameters trained to predict the next token in a sequence...",
+    "The magic is in the weights: 15 trillion tokens of training data compressed into parameters that encode human knowledge...",
+    "Every word you see is sampled from a probability distribution over 100,277 possible tokens. There's no magic — just math at scale."
+  ];
+  let mi = 0, ci = 0, deleting = false, pauseTimer = null;
+
+  function type() {
+    const msg = messages[mi];
+    if (!deleting) {
+      if (ci < msg.length) {
+        el.innerHTML = msg.slice(0, ++ci) + '<span class="tw-cursor"></span>';
+        setTimeout(type, 28 + Math.random() * 20);
+      } else {
+        pauseTimer = setTimeout(() => { deleting = true; type(); }, 2800);
+      }
+    } else {
+      if (ci > 0) {
+        el.innerHTML = msg.slice(0, --ci) + '<span class="tw-cursor"></span>';
+        setTimeout(type, 12);
+      } else {
+        deleting = false;
+        mi = (mi + 1) % messages.length;
+        setTimeout(type, 400);
+      }
+    }
+  }
+  setTimeout(type, 1200);
+})();
+
+// ═══════════════════════════════════════════════
+// BPE VISUALIZATION SVG
+// ═══════════════════════════════════════════════
+(function(){
+  const svg = document.getElementById('bpe-svg');
+  const steps = [
+    { label: 'Raw Text', tokens: ['t','o','k','e','n','i','z','a','t','i','o','n'], desc: 'Start: individual characters' },
+    { label: 'Bytes (UTF-8)', tokens: ['116','111','107','101','110','105','122','97','116','105','111','110'], desc: 'Encode to byte IDs (0–255)' },
+    { label: 'After BPE merge 1', tokens: ['to','k','en','i','za','ti','on'], desc: 'Merge frequent pairs' },
+    { label: 'After BPE merge 2', tokens: ['token','iza','tion'], desc: 'Continue merging' },
+    { label: 'Final Tokens', tokens: ['token','ization'], desc: 'GPT-4: 2 tokens for this word' }
+  ];
+  let step = 0;
+
+  function renderStep() {
+    const s = steps[step];
+    const colors = ['#00E5FF','#FFB020','#9D6EF8','#00D68F','#FF5252','#64C8FF','#FFA060','#C8FF64'];
+    let html = `<text x="190" y="24" text-anchor="middle" font-family="Syne" font-size="11" fill="#4A6080" letter-spacing="2">${s.desc.toUpperCase()}</text>`;
+
+    const tokenW = Math.min(340 / s.tokens.length - 4, 52);
+    const startX = (380 - (s.tokens.length * (tokenW + 4))) / 2;
+
+    s.tokens.forEach((tok, i) => {
+      const x = startX + i * (tokenW + 4);
+      const color = colors[i % colors.length];
+      html += `<rect x="${x}" y="40" width="${tokenW}" height="28" rx="4" fill="${color}20" stroke="${color}40" stroke-width="1"/>`;
+      html += `<text x="${x + tokenW/2}" y="59" text-anchor="middle" font-family="JetBrains Mono" font-size="${tok.length > 4 ? 9 : 11}" fill="${color}">${tok}</text>`;
+    });
+
+    // Token count badge
+    html += `<rect x="10" y="82" width="360" height="1" fill="#1A2840"/>`;
+    html += `<text x="10" y="100" font-family="JetBrains Mono" font-size="10" fill="#4A6080">TOKENS: ${s.tokens.length}</text>`;
+    html += `<text x="370" y="100" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#00E5FF">${s.label}</text>`;
+
+    // Step indicators
+    steps.forEach((_, i) => {
+      const cx = 50 + i * 70;
+      html += `<circle cx="${cx}" cy="130" r="7" fill="${i === step ? '#00E5FF' : '#0C1525'}" stroke="${i <= step ? '#00E5FF' : '#1A2840'}" stroke-width="1.5"/>`;
+      if (i < steps.length - 1) html += `<line x1="${cx+7}" y1="130" x2="${cx+63}" y2="130" stroke="${i < step ? '#00E5FF40' : '#1A284060'}" stroke-width="1"/>`;
+      html += `<text x="${cx}" y="150" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="${i === step ? '#00E5FF' : '#2A4060'}">${i+1}</text>`;
+    });
+
+    html += `<text x="190" y="185" text-anchor="middle" font-family="Manrope" font-size="10" fill="#4A6080">Click to advance</text>`;
+
+    // "Vocabulary size" bar
+    const vocabFraction = [2, 256, 0.3, 0.05, 1/50138.5][step] || 0.5;
+    const barW = Math.max(8, Math.min(340, step === 4 ? 340 * (2/100277) * 10000 : step === 0 ? 30 : step === 1 ? 80 : step === 2 ? 160 : 260));
+    html += `<rect x="20" y="205" width="340" height="8" rx="4" fill="#0C1525"/>`;
+    html += `<rect x="20" y="205" width="${barW}" height="8" rx="4" fill="url(#grad)"/>`;
+    html += `<defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#00E5FF"/><stop offset="1" stop-color="#9D6EF8"/></linearGradient></defs>`;
+    html += `<text x="20" y="228" font-family="JetBrains Mono" font-size="9" fill="#4A6080">SEQUENCE LENGTH →</text>`;
+    html += `<text x="360" y="228" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#4A6080">← VOCAB SIZE</text>`;
+
+    // Annotation
+    const annotations = ['12 symbols (chars)','12 symbols (bytes: 0-255)','7 tokens','3 tokens','2 tokens ✓'];
+    html += `<text x="190" y="260" text-anchor="middle" font-family="Syne" font-size="13" font-weight="600" fill="#F0F8FF">${annotations[step]}</text>`;
+
+    svg.innerHTML = html;
+  }
+
+  function advance() {
+    step = (step + 1) % steps.length;
+    renderStep();
+    const lbl = document.getElementById('bpe-step-label');
+    if (lbl) lbl.textContent = `Step ${step + 1} of ${steps.length}`;
+  }
+
+  renderStep();
+  // Keep click on SVG for mouse users
+  svg.addEventListener('click', advance);
+  // Proper button for keyboard users
+  const advBtn = document.getElementById('bpe-advance-btn');
+  if (advBtn) advBtn.addEventListener('click', advance);
+})();
+
+// ═══════════════════════════════════════════════
+// TOKENIZER
+// ═══════════════════════════════════════════════
+(function(){
+  const input = document.getElementById('tokenizer-input');
+  const output = document.getElementById('token-output');
+  const countEl = document.getElementById('token-count');
+  const charEl = document.getElementById('char-count');
+  const ratioEl = document.getElementById('ratio');
+
+  function hashStr(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+    return (Math.abs(h) % 90000) + 9000;
+  }
+
+  const knownVocab = {
+    ' the': 264,' of': 315,' and': 438,' to': 284,' a': 602,' in': 287,
+    ' that': 430,' is': 374,' was': 574,' for': 369,' on': 389,' are': 527,
+    ' with': 449,' as': 382,' at': 379,' be': 387,' by': 555,' from': 505,
+    ' or': 477,' an': 459,' this': 502,' have': 636,' it': 433,' not': 521,
+    ' which': 668,' he': 568,' you': 499,' we': 584,' but': 645,' his': 777,
+    ' they': 814,' her': 843,' all': 599,' she': 679,' their': 927,
+    'the': 1820,' The': 791,' is': 1826,' in': 287,' It': 1987,
+    'ing': 278,' ing': 278,'tion': 295,'ation': 13079,'ization': 12248,
+    'ed': 455,' ed': 455,'ly': 418,'ness': 1108,'ment': 976,
+    'er': 261,'ers': 669,'est': 944,'ful': 1324,'less': 1752,
+    'pre': 7189,'post': 1281,'self': 1053,'over': 927,'under': 916,
+    'un': 653,'re': 260,'de': 390,'dis': 6570,'mis': 15046,
+    'al': 453,'ic': 292,'ive': 535,'ous': 516,'ary': 1065,
+    ',': 11,' .'  : 13,'.': 13,'!': 0,'?': 30,':': 25,';': 26,
+    ' -': 482,'-': 12,'(': 7,')'  : 8,'"': 1,'\'': 6,
+    ' 1': 220,' 2': 198,' 3': 220,' 4': 220,' 5': 220,
+    '0': 15,'1': 16,'2': 17,'3': 18,'4': 19,'5': 20,'6': 21,'7': 22,'8': 23,'9': 24,
+    '\n': 198,' \n': 627,
+    ' large': 3544,' language': 4221,' model': 2849,' token': 3239,' neural': 21028,
+    ' network': 4009,' training': 4478,' data': 828,' predict': 7548,
+    ' text': 1495,' word': 1734,' sentence': 11914,' next': 1306,
+  };
+
+  const suffixes = ['ization','ational','ation','tion','sion','ness','ment','ful','less','ize','ing','ers','ent','ive','ous','ary','ery','ory','ally','ibly','ably','edly','al','ic','er','ed','ly','es','s'];
+  const prefixes = ['under','trans','inter','super','auto','semi','anti','fore','micro','over','self','post','pre','dis','mis','non','un','re','de','co','en','em'];
+
+  function tokenize(text) {
+    const tokens = [];
+    // Split on spaces while keeping them, on punctuation
+    const parts = text.match(/\s+|\w+|[^\w\s]/g) || [];
+    for (const part of parts) {
+      if (!part.trim()) { tokens.push({ text: part, id: 198 }); continue; }
+      if (/^[0-9]+$/.test(part)) {
+        if (part.length <= 3) { tokens.push({ text: part, id: knownVocab[part] || (1000 + parseInt(part)) }); }
+        else { for (const d of part) tokens.push({ text: d, id: 15 + parseInt(d) }); }
+        continue;
+      }
+      if (/^[^\w]$/.test(part)) { tokens.push({ text: part, id: knownVocab[part] || hashStr(part) }); continue; }
+      // Word — try known vocab first with/without space
+      const wKey = ' ' + part.toLowerCase();
+      if (knownVocab[wKey]) { tokens.push({ text: part, id: knownVocab[wKey] }); continue; }
+      if (knownVocab[part.toLowerCase()]) { tokens.push({ text: part, id: knownVocab[part.toLowerCase()] }); continue; }
+      // Try suffix split
+      let split = false;
+      for (const suf of suffixes) {
+        if (part.toLowerCase().endsWith(suf) && part.length - suf.length >= 3) {
+          const root = part.slice(0, part.length - suf.length);
+          tokens.push({ text: root, id: hashStr(root) });
+          tokens.push({ text: suf, id: knownVocab[suf] || hashStr(suf) });
+          split = true; break;
+        }
+      }
+      if (!split) {
+        // Try prefix split
+        for (const pre of prefixes) {
+          if (part.toLowerCase().startsWith(pre) && part.length - pre.length >= 3) {
+            const rest = part.slice(pre.length);
+            tokens.push({ text: part.slice(0, pre.length), id: knownVocab[pre] || hashStr(pre) });
+            tokens.push({ text: rest, id: hashStr(rest) });
+            split = true; break;
+          }
+        }
+      }
+      if (!split) tokens.push({ text: part, id: hashStr(part) });
+    }
+    // Merge leading spaces with following token
+    const merged = [];
+    let i = 0;
+    while (i < tokens.length) {
+      if (tokens[i].text.trim() === '' && i + 1 < tokens.length) {
+        merged.push({ text: tokens[i].text + tokens[i+1].text, id: tokens[i+1].id });
+        i += 2;
+      } else { merged.push(tokens[i]); i++; }
+    }
+    return merged;
+  }
+
+  function render() {
+    const text = input.value;
+    const tokens = tokenize(text);
+    output.innerHTML = '';
+    tokens.forEach((t, i) => {
+      const el = document.createElement('span');
+      el.className = `token tc-${i % 12}`;
+      el.textContent = t.text;
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', `Token: ${t.text.trim() || 'space'}, ID: ${t.id}`);
+      el.title = `Token ID: ${t.id}`;
+      const idSpan = document.createElement('span');
+      idSpan.className = 'token-id';
+      idSpan.textContent = t.id;
+      idSpan.setAttribute('aria-hidden', 'true');
+      el.appendChild(idSpan);
+      output.appendChild(el);
+    });
+    const realTokens = tokens.filter(t => t.text.trim().length > 0);
+    countEl.textContent = tokens.length;
+    charEl.textContent = text.length;
+    ratioEl.textContent = tokens.length > 0 ? (text.length / tokens.length).toFixed(1) : '0';
+  }
+
+  input.addEventListener('input', render);
+  document.querySelectorAll('.token-example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.value = btn.dataset.text;
+      render();
+    });
+  });
+  render();
+})();
+
+// ═══════════════════════════════════════════════
+// TRANSFORMER DIAGRAM SVG
+// ═══════════════════════════════════════════════
+(function(){
+  const svg = document.getElementById('transformer-svg');
+  const layers = [
+    { label: 'Input Tokens', color: '#FFB020', y: 310 },
+    { label: 'Token Embedding', color: '#FFB020', y: 272 },
+    { label: 'Multi-Head Attention', color: '#00E5FF', y: 220 },
+    { label: 'Feed Forward (MLP)', color: '#9D6EF8', y: 168 },
+    { label: 'Layer Norm + Residual', color: '#4A6080', y: 130 },
+    { label: '× N Transformer Blocks', color: '#5A7090', y: 95 },
+    { label: 'Output Logits', color: '#00D68F', y: 50 },
+  ];
+
+  let html = '';
+  // Grid background
+  for (let i = 0; i < 8; i++) {
+    html += `<line x1="${45*i}" y1="0" x2="${45*i}" y2="340" stroke="rgba(26,40,64,0.4)" stroke-width=".5"/>`;
+    html += `<line x1="0" y1="${45*i}" x2="360" y2="${45*i}" stroke="rgba(26,40,64,0.4)" stroke-width=".5"/>`;
+  }
+
+  layers.forEach((layer, i) => {
+    const isMain = i >= 2 && i <= 3;
+    const h = isMain ? 32 : 26;
+    const alpha = i === 5 ? '20' : '18';
+    html += `<rect x="30" y="${layer.y - h/2}" width="300" height="${h}" rx="5" fill="${layer.color}${alpha}" stroke="${layer.color}40" stroke-width="1.5"/>`;
+    html += `<text x="180" y="${layer.y + 5}" text-anchor="middle" font-family="JetBrains Mono" font-size="${isMain ? 11 : 10}" fill="${layer.color}">${layer.label}</text>`;
+    if (i < layers.length - 1) {
+      const nextY = layers[i+1].y + (isMain ? 16 : 13);
+      html += `<line x1="180" y1="${layer.y - h/2}" x2="180" y2="${nextY + 2}" stroke="${layer.color}50" stroke-width="1" stroke-dasharray="${i>=4?'3,3':''}"/>`;
+      html += `<polygon points="175,${nextY + 8} 185,${nextY + 8} 180,${nextY + 14}" fill="${layers[i+1].color}80"/>`;
+    }
+  });
+
+  // Attention pattern animation
+  html += `<circle cx="90" cy="220" r="4" fill="#00E5FF" opacity="0.5"><animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/></circle>`;
+  html += `<circle cx="270" cy="220" r="4" fill="#00E5FF" opacity="0.5"><animate attributeName="r" values="3;6;3" dur="2s" begin="1s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.5;1;0.5" dur="2s" begin="1s" repeatCount="indefinite"/></circle>`;
+
+  svg.innerHTML = html;
+})();
+
+// ═══════════════════════════════════════════════
+// TRAINING LOOP — Loss Curve
+// ═══════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('loss-canvas');
+  const ctx = canvas.getContext('2d');
+  const lossEl = document.getElementById('current-loss');
+  const stepEl = document.getElementById('current-step');
+  const textEl = document.getElementById('training-text-output');
+  let targetStep = 500, animStep = 0, animId = null;
+
+  const lossData = [];
+  // Generate loss curve with realistic noise
+  function genLoss(step) {
+    const base = 2.4 + 8.8 * Math.exp(-step / 4000);
+    return base + (Math.random() - .5) * 0.25 * Math.exp(-step / 3000);
+  }
+  for (let i = 0; i <= 32000; i += 100) lossData.push({ step: i, loss: genLoss(i) });
+
+  const trainingTexts = {
+    1: `<span class="incoherent">wqp mxr tkz bnf opc lsw mzq vdf nrt</span>`,
+    500: `<span class="incoherent">the model has learn</span><span class="coherent">ing</span> <span class="incoherent">but confus</span><span class="coherent">tion</span> <span class="incoherent">still wqp</span> <span class="coherent">the model</span> <span class="incoherent">bns</span> <span class="coherent">to predict</span>...`,
+    5000: `<span class="coherent">The language model learns to predict the next token in a sequence.</span> <span class="incoherent">Training requires many thousands of</span> <span class="coherent">gradient descent steps</span> <span class="incoherent">to converge</span>.`,
+    32000: `<span class="coherent">The neural network has learned the statistical patterns of human language. It can generate coherent text on virtually any topic, answer questions, write code, and engage in multi-turn conversations.</span>`
+  };
+
+  function drawCurve(upToStep) {
+    const W = canvas.offsetWidth || 400;
+    const H = 200;
+    canvas.width = W;
+    canvas.height = H;
+    const pad = { l: 40, r: 20, t: 15, b: 30 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const maxLoss = 12, minLoss = 2.0;
+
+    ctx.clearRect(0, 0, W, H);
+    // Grid
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.t + (i/4) * cH;
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(26,40,64,0.8)';
+      ctx.lineWidth = .5;
+      ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      const lv = maxLoss - (i/4) * (maxLoss - minLoss);
+      ctx.fillStyle = 'rgba(74,96,128,0.7)';
+      ctx.font = '9px JetBrains Mono';
+      ctx.fillText(lv.toFixed(1), 2, y + 3);
+    }
+    // Axes
+    ctx.strokeStyle = 'rgba(26,40,64,1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.lineTo(W - pad.r, H - pad.b);
+    ctx.stroke();
+    // X labels
+    ctx.fillStyle = 'rgba(74,96,128,0.7)';
+    ctx.font = '8px JetBrains Mono';
+    ['0','10K','20K','32K'].forEach((l, i) => ctx.fillText(l, pad.l + (i/3)*cW - 8, H - 5));
+
+    // Gradient fill
+    const grd = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+    grd.addColorStop(0, 'rgba(0,229,255,0.15)');
+    grd.addColorStop(1, 'rgba(0,229,255,0)');
+
+    const visData = lossData.filter(d => d.step <= upToStep);
+    if (visData.length < 2) return;
+
+    ctx.beginPath();
+    visData.forEach((d, i) => {
+      const x = pad.l + (d.step / 32000) * cW;
+      const y = pad.t + ((maxLoss - d.loss) / (maxLoss - minLoss)) * cH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    const lastX = pad.l + (visData[visData.length-1].step / 32000) * cW;
+    ctx.lineTo(lastX, H - pad.b);
+    ctx.lineTo(pad.l, H - pad.b);
+    ctx.closePath();
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    visData.forEach((d, i) => {
+      const x = pad.l + (d.step / 32000) * cW;
+      const y = pad.t + ((maxLoss - d.loss) / (maxLoss - minLoss)) * cH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#00E5FF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Dot at current position
+    const last = visData[visData.length-1];
+    const lx = pad.l + (last.step / 32000) * cW;
+    const ly = pad.t + ((maxLoss - last.loss) / (maxLoss - minLoss)) * cH;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#00E5FF';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(lx, ly, 7, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(0,229,255,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function animateTo(step) {
+    if (animId) cancelAnimationFrame(animId);
+    const startStep = animStep;
+    const delta = step - startStep;
+    const duration = Math.min(1200, Math.abs(delta) / 20);
+    const start = performance.now();
+
+    function frame(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = t < .5 ? 2*t*t : -1+(4-2*t)*t;
+      const cur = Math.round(startStep + delta * eased);
+      animStep = cur;
+      drawCurve(cur);
+
+      // Update loss display
+      const lossPoint = lossData.find(d => d.step >= cur) || lossData[lossData.length-1];
+      lossEl.textContent = lossPoint.loss.toFixed(1);
+      stepEl.textContent = cur.toLocaleString();
+
+      if (t < 1) animId = requestAnimationFrame(frame);
+    }
+    animId = requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll('.stage-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const step = parseInt(this.dataset.step);
+      targetStep = step;
+      animateTo(step);
+      textEl.innerHTML = trainingTexts[step];
+    });
+  });
+
+  // Initial draw
+  setTimeout(() => {
+    animateTo(500);
+    textEl.innerHTML = trainingTexts[500];
+  }, 500);
+  window.addEventListener('resize', () => drawCurve(animStep));
+})();
+
+// ═══════════════════════════════════════════════
+// INFERENCE — Probability Sampling Demo
+// ═══════════════════════════════════════════════
+(function(){
+  const seqEl = document.getElementById('gen-seq');
+  const barsEl = document.getElementById('prob-bars');
+  const tempSlider = document.getElementById('temp-slider');
+  const tempVal = document.getElementById('temp-val');
+  const sampleBtn = document.getElementById('sample-btn');
+  const resetBtn = document.getElementById('reset-gen-btn');
+  const infoEl = document.getElementById('sample-info');
+
+  const tokenSets = {
+    'The sky appears blue': [
+      {t: ' because', raw: 0.31}, {t: ' due', raw: 0.18}, {t: ',', raw: 0.12},
+      {t: ' to', raw: 0.10}, {t: ' when', raw: 0.08}, {t: ' as', raw: 0.06},
+      {t: ' from', raw: 0.04}, {t: ' and', raw: 0.03},
+    ],
+    'The sky appears blue because': [
+      {t: ' of', raw: 0.42}, {t: ' light', raw: 0.20}, {t: ' Rayleigh', raw: 0.12},
+      {t: ' the', raw: 0.09}, {t: ' shorter', raw: 0.06}, {t: ' sunlight', raw: 0.04},
+      {t: ' scattered', raw: 0.03}, {t: ' wavelength', raw: 0.02},
+    ],
+    'The sky appears blue because of': [
+      {t: ' Rayleigh', raw: 0.38}, {t: ' the', raw: 0.25}, {t: ' light', raw: 0.12},
+      {t: ' scattering', raw: 0.09}, {t: ' atmospheric', raw: 0.07}, {t: ' how', raw: 0.04},
+      {t: ' sunlight', raw: 0.03}, {t: ' blue', raw: 0.02},
+    ],
+  };
+  const fallback = [
+    {t: ' light', raw: 0.28}, {t: ' the', raw: 0.22}, {t: ' a', raw: 0.14},
+    {t: ' an', raw: 0.10}, {t: ' scattering', raw: 0.08}, {t: ' wavelengths', raw: 0.06},
+    {t: ' blue', raw: 0.05}, {t: ' molecules', raw: 0.04},
+  ];
+
+  const barColors = ['#00E5FF','#9D6EF8','#FFB020','#00D68F','#FF5252','#64C8FF','#FFA060','#C8FF64'];
+
+  function applyTemp(tokens, temp) {
+    const logits = tokens.map(t => Math.log(t.raw) / temp);
+    const maxL = Math.max(...logits);
+    const exps = logits.map(l => Math.exp(l - maxL));
+    const sum = exps.reduce((a,b) => a+b, 0);
+    return tokens.map((t, i) => ({ ...t, prob: exps[i] / sum }));
+  }
+
+  function renderBars(tokens, selectedIdx = -1) {
+    const temp = parseFloat(tempSlider.value);
+    const processed = applyTemp(tokens, temp);
+    barsEl.innerHTML = '';
+    processed.forEach((t, i) => {
+      const pct = (t.prob * 100).toFixed(1);
+      const row = document.createElement('div');
+      row.className = 'prob-row' + (i === selectedIdx ? ' selected' : '');
+      const color = barColors[i % barColors.length];
+      row.innerHTML = `
+        <div class="prob-token-label">${t.t}</div>
+        <div class="prob-bar-bg">
+          <div class="prob-bar-fill" style="width:${t.prob * 100}%;background:${color}${i === selectedIdx ? 'ff' : '66'}">
+            <span>${pct}%</span>
+          </div>
+        </div>`;
+      barsEl.appendChild(row);
+    });
+    return processed;
+  }
+
+  function getCurrentTokens() {
+    const seq = seqEl.textContent;
+    return tokenSets[seq] || fallback;
+  }
+
+  let lastProcessed = null;
+
+  function updateBars() {
+    lastProcessed = renderBars(getCurrentTokens());
+  }
+
+  tempSlider.addEventListener('input', () => {
+    tempVal.textContent = tempSlider.value;
+    updateBars();
+  });
+
+  sampleBtn.addEventListener('click', () => {
+    sampleBtn.disabled = true;
+    const temp = parseFloat(tempSlider.value);
+    const tokens = getCurrentTokens();
+    const processed = applyTemp(tokens, temp);
+
+    // Animate bars first (show un-selected state briefly)
+    renderBars(tokens);
+
+    setTimeout(() => {
+      // Sample based on probabilities
+      const r = Math.random();
+      let cumul = 0, selectedIdx = processed.length - 1;
+      for (let i = 0; i < processed.length; i++) {
+        cumul += processed[i].prob;
+        if (r < cumul) { selectedIdx = i; break; }
+      }
+
+      renderBars(tokens, selectedIdx);
+
+      setTimeout(() => {
+        const newText = seqEl.textContent + processed[selectedIdx].t;
+        seqEl.innerHTML = '';
+        const span = document.createElement('span');
+        span.className = 'gen-token';
+        span.textContent = newText;
+        seqEl.appendChild(span);
+
+        infoEl.textContent = `Sampled "${processed[selectedIdx].t}" (${(processed[selectedIdx].prob * 100).toFixed(1)}% prob)`;
+
+        setTimeout(() => {
+          updateBars();
+          sampleBtn.disabled = false;
+        }, 300);
+      }, 600);
+    }, 200);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    seqEl.textContent = 'The sky appears blue';
+    infoEl.textContent = '';
+    updateBars();
+  });
+
+  updateBars();
+})();
+
+// ═══════════════════════════════════════════════
+// PIPELINE ANIMATION
+// ═══════════════════════════════════════════════
+(function(){
+  const nodes = document.querySelectorAll('.pipeline-node');
+  const arrows = document.querySelectorAll('.pipeline-arrow');
+
+  function activateNode(node) {
+    const wasActive = node.classList.contains('active');
+    nodes.forEach(n => {
+      n.classList.remove('active');
+      n.setAttribute('aria-expanded', 'false');
+    });
+    if (!wasActive) {
+      node.classList.add('active');
+      node.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  nodes.forEach(node => {
+    node.addEventListener('click', function() { activateNode(this); });
+    node.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateNode(this); }
+    });
+  });
+
+  document.getElementById('run-pipeline-btn').addEventListener('click', function() {
+    nodes.forEach(n => { n.classList.remove('active'); n.setAttribute('aria-expanded','false'); });
+    arrows.forEach(a => a.classList.remove('lit'));
+    let i = 0;
+    function next() {
+      if (i < nodes.length) {
+        nodes[i].classList.add('active');
+        nodes[i].setAttribute('aria-expanded','true');
+        if (i > 0) arrows[i-1].classList.add('lit');
+        i++;
+        setTimeout(next, 500);
+      }
+    }
+    next();
+  });
+})();
+
+// ═══════════════════════════════════════════════
+// SCROLL OBSERVER — Animations + Nav
+// ═══════════════════════════════════════════════
+(function(){
+  const sections = document.querySelectorAll('.section');
+  const navDots = document.querySelectorAll('.nav-dot');
+  const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+  const progressBar = document.getElementById('progress-bar');
+  const pipelineStages = document.querySelectorAll('.pipeline-stage');
+
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+    const total = document.body.scrollHeight - window.innerHeight;
+    const pct = Math.round(scrolled / total * 100);
+    progressBar.style.width = pct + '%';
+    progressBar.setAttribute('aria-valuenow', pct);
+  });
+
+  // Intersection observer for fade-up elements
+  document.querySelectorAll('.fade-up, .fade-in').forEach(el => el.classList.add('animate-ready'));
+
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-up, .fade-in').forEach(el => fadeObserver.observe(el));
+
+  // Pipeline stages observer
+  pipelineStages.forEach(s => s.classList.add('animate-ready'));
+  const pipelineObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        pipelineStages.forEach((s, i) => setTimeout(() => s.classList.add('visible'), i * 100));
+        pipelineObserver.disconnect();
+      }
+    });
+  }, { threshold: 0.05 });
+
+  const summarySection = document.getElementById('s-summary');
+  if (summarySection) pipelineObserver.observe(summarySection);
+
+  // Update both navs when section changes
+  function setActiveNav(sectionId) {
+    navDots.forEach(dot => {
+      const isActive = dot.dataset.section === sectionId;
+      dot.classList.toggle('active', isActive);
+      dot.setAttribute('aria-current', isActive ? 'true' : 'false');
+    });
+    mobileNavBtns.forEach(btn => {
+      const isActive = btn.dataset.section === sectionId;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+    });
+  }
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) setActiveNav(entry.target.id);
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => sectionObserver.observe(s));
+
+  // Nav interactions — shared handler
+  function handleNavClick(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) section.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  navDots.forEach(dot => {
+    dot.addEventListener('click', () => handleNavClick(dot.dataset.section));
+    dot.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNavClick(dot.dataset.section); }
+    });
+  });
+
+  mobileNavBtns.forEach(btn => {
+    btn.addEventListener('click', () => handleNavClick(btn.dataset.section));
+  });
+
+  // Training stage buttons: aria-pressed
+  document.querySelectorAll('.stage-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.stage-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      this.setAttribute('aria-pressed', 'true');
+    });
+  });
+})();
+</script>
+</body>
+</html>
