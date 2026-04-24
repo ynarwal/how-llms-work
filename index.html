@@ -151,8 +151,8 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
 
 /* ── SECTION 3: TOKENIZER ── */
 .tokenizer-label{display:block;font-family:var(--ds);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt2);margin-bottom:8px}
-.tokenizer-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:2px;padding:14px 16px;font-family:var(--dm);font-size:13px;color:var(--txt-b);resize:vertical;min-height:90px;outline:none;transition:.2s;line-height:1.6}
-.tokenizer-input:focus{border-color:rgba(192,57,43,0.4);box-shadow:0 0 0 2px var(--bg),0 0 0 4px rgba(192,57,43,0.2)}
+.tiktokenizer-link{display:inline-flex;align-items:center;gap:8px;font-family:var(--ds);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);text-decoration:none;border:1px solid rgba(192,57,43,0.3);padding:10px 18px;border-radius:2px;transition:.2s}
+.tiktokenizer-link:hover{background:var(--accent);color:var(--card);border-color:var(--accent)}
 .tokenizer-hint{font-family:var(--db);font-size:13px;color:var(--txt2);margin-top:6px;margin-bottom:10px;font-style:italic}
 .token-output{min-height:80px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:2px;margin-top:4px}
 .token{font-family:var(--dm);font-size:12.5px;padding:3px 6px;border-radius:1px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:0;position:relative}
@@ -487,24 +487,7 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
       </div>
     </div>
     <div class="fade-up" style="animation-delay:.2s">
-      <h3 class="sub-title" style="margin-bottom:12px" id="tokenizer-heading">Live Tokenizer</h3>
-      <p class="tokenizer-hint">Try the examples below or type your own text. <strong>Hover (or focus) any token</strong> to see its ID.</p>
-      <div class="token-examples" id="token-examples" role="group" aria-label="Example texts to tokenize">
-        <button class="token-example-btn" data-text="Hello, world!" aria-label="Load example: Hello world">Hello world</button>
-        <button class="token-example-btn" data-text="Large language models like ChatGPT work by predicting the next token." aria-label="Load example: LLM description">LLM description</button>
-        <button class="token-example-btn" data-text="tokenization is the process of converting text into numerical tokens" aria-label="Load example: Tokenization">Tokenization</button>
-        <button class="token-example-btn" data-text="1234567890" aria-label="Load example: Numbers">Numbers</button>
-        <button class="token-example-btn" data-text="pre-training post-training fine-tuning self-attention transformer" aria-label="Load example: Compound words">Compound words</button>
-      </div>
-      <label class="tokenizer-label" for="tokenizer-input">Enter text to tokenize</label>
-      <textarea class="tokenizer-input" id="tokenizer-input" placeholder="Type anything to tokenize it..." aria-describedby="tokenizer-heading token-stats-region">Large language models predict the next token in a sequence.</textarea>
-      <div class="token-output" id="token-output" aria-label="Tokenized output" aria-live="polite"></div>
-      <div class="token-stats" id="token-stats-region" role="status" aria-live="polite">
-        <div>Tokens: <span id="token-count">0</span></div>
-        <div>Characters: <span id="char-count">0</span></div>
-        <div>Ratio: <span id="ratio">0</span> chars/token</div>
-      </div>
-      <p class="tokenizer-hint" style="margin-top:14px;font-style:italic;color:var(--txt2)">This is a simplified educational approximation — not a real BPE tokenizer. Made-up or uncommon words will be split incorrectly. For accurate tokenization try the real thing: <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">tiktokenizer.vercel.app</a></p>
+      <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener" class="tiktokenizer-link">Try the real tokenizer → tiktokenizer.vercel.app</a>
     </div>
   </div>
 </section>
@@ -1113,134 +1096,6 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
   if (advBtn) advBtn.addEventListener('click', advance);
 })();
 
-// ═══════════════════════════════════════════════
-// TOKENIZER
-// ═══════════════════════════════════════════════
-(function(){
-  const input = document.getElementById('tokenizer-input');
-  const output = document.getElementById('token-output');
-  const countEl = document.getElementById('token-count');
-  const charEl = document.getElementById('char-count');
-  const ratioEl = document.getElementById('ratio');
-
-  function hashStr(s) {
-    let h = 5381;
-    for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
-    return (Math.abs(h) % 90000) + 9000;
-  }
-
-  const knownVocab = {
-    ' the': 264,' of': 315,' and': 438,' to': 284,' a': 602,' in': 287,
-    ' that': 430,' is': 374,' was': 574,' for': 369,' on': 389,' are': 527,
-    ' with': 449,' as': 382,' at': 379,' be': 387,' by': 555,' from': 505,
-    ' or': 477,' an': 459,' this': 502,' have': 636,' it': 433,' not': 521,
-    ' which': 668,' he': 568,' you': 499,' we': 584,' but': 645,' his': 777,
-    ' they': 814,' her': 843,' all': 599,' she': 679,' their': 927,
-    'the': 1820,' The': 791,' is': 1826,' in': 287,' It': 1987,
-    'ing': 278,' ing': 278,'tion': 295,'ation': 13079,'ization': 12248,
-    'ed': 455,' ed': 455,'ly': 418,'ness': 1108,'ment': 976,
-    'er': 261,'ers': 669,'est': 944,'ful': 1324,'less': 1752,
-    'pre': 7189,'post': 1281,'self': 1053,'over': 927,'under': 916,
-    'un': 653,'re': 260,'de': 390,'dis': 6570,'mis': 15046,
-    'al': 453,'ic': 292,'ive': 535,'ous': 516,'ary': 1065,
-    ',': 11,' .'  : 13,'.': 13,'!': 0,'?': 30,':': 25,';': 26,
-    ' -': 482,'-': 12,'(': 7,')'  : 8,'"': 1,'\'': 6,
-    ' 1': 220,' 2': 198,' 3': 220,' 4': 220,' 5': 220,
-    '0': 15,'1': 16,'2': 17,'3': 18,'4': 19,'5': 20,'6': 21,'7': 22,'8': 23,'9': 24,
-    '\n': 198,' \n': 627,
-    ' large': 3544,' language': 4221,' model': 2849,' token': 3239,' neural': 21028,
-    ' network': 4009,' training': 4478,' data': 828,' predict': 7548,
-    ' text': 1495,' word': 1734,' sentence': 11914,' next': 1306,
-  };
-
-  const suffixes = ['ization','ational','ation','tion','sion','ness','ment','ful','less','ize','ing','ers','ent','ive','ous','ary','ery','ory','ally','ibly','ably','edly','al','ic','er','ed','ly','es','s'];
-  const prefixes = ['under','trans','inter','super','auto','semi','anti','fore','micro','over','self','post','pre','dis','mis','non','un','re','de','co','en','em'];
-
-  function tokenize(text) {
-    const tokens = [];
-    // Split on spaces while keeping them, on punctuation
-    const parts = text.match(/\s+|\w+|[^\w\s]/g) || [];
-    for (const part of parts) {
-      if (!part.trim()) { tokens.push({ text: part, id: 198 }); continue; }
-      if (/^[0-9]+$/.test(part)) {
-        if (part.length <= 3) { tokens.push({ text: part, id: knownVocab[part] || (1000 + parseInt(part)) }); }
-        else { for (const d of part) tokens.push({ text: d, id: 15 + parseInt(d) }); }
-        continue;
-      }
-      if (/^[^\w]$/.test(part)) { tokens.push({ text: part, id: knownVocab[part] || hashStr(part) }); continue; }
-      // Word — try known vocab first with/without space
-      const wKey = ' ' + part.toLowerCase();
-      if (knownVocab[wKey]) { tokens.push({ text: part, id: knownVocab[wKey] }); continue; }
-      if (knownVocab[part.toLowerCase()]) { tokens.push({ text: part, id: knownVocab[part.toLowerCase()] }); continue; }
-      // Try suffix split
-      let split = false;
-      for (const suf of suffixes) {
-        if (part.toLowerCase().endsWith(suf) && part.length - suf.length >= 3) {
-          const root = part.slice(0, part.length - suf.length);
-          tokens.push({ text: root, id: hashStr(root) });
-          tokens.push({ text: suf, id: knownVocab[suf] || hashStr(suf) });
-          split = true; break;
-        }
-      }
-      if (!split) {
-        // Try prefix split
-        for (const pre of prefixes) {
-          if (part.toLowerCase().startsWith(pre) && part.length - pre.length >= 3) {
-            const rest = part.slice(pre.length);
-            tokens.push({ text: part.slice(0, pre.length), id: knownVocab[pre] || hashStr(pre) });
-            tokens.push({ text: rest, id: hashStr(rest) });
-            split = true; break;
-          }
-        }
-      }
-      if (!split) tokens.push({ text: part, id: hashStr(part) });
-    }
-    // Merge leading spaces with following token
-    const merged = [];
-    let i = 0;
-    while (i < tokens.length) {
-      if (tokens[i].text.trim() === '' && i + 1 < tokens.length) {
-        merged.push({ text: tokens[i].text + tokens[i+1].text, id: tokens[i+1].id });
-        i += 2;
-      } else { merged.push(tokens[i]); i++; }
-    }
-    return merged;
-  }
-
-  function render() {
-    const text = input.value;
-    const tokens = tokenize(text);
-    output.innerHTML = '';
-    tokens.forEach((t, i) => {
-      const el = document.createElement('span');
-      el.className = `token tc-${i % 12}`;
-      el.textContent = t.text;
-      el.setAttribute('tabindex', '0');
-      el.setAttribute('role', 'button');
-      el.setAttribute('aria-label', `Token: ${t.text.trim() || 'space'}, ID: ${t.id}`);
-      el.title = `Token ID: ${t.id}`;
-      const idSpan = document.createElement('span');
-      idSpan.className = 'token-id';
-      idSpan.textContent = t.id;
-      idSpan.setAttribute('aria-hidden', 'true');
-      el.appendChild(idSpan);
-      output.appendChild(el);
-    });
-    const realTokens = tokens.filter(t => t.text.trim().length > 0);
-    countEl.textContent = tokens.length;
-    charEl.textContent = text.length;
-    ratioEl.textContent = tokens.length > 0 ? (text.length / tokens.length).toFixed(1) : '0';
-  }
-
-  input.addEventListener('input', render);
-  document.querySelectorAll('.token-example-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      input.value = btn.dataset.text;
-      render();
-    });
-  });
-  render();
-})();
 
 // ═══════════════════════════════════════════════
 // TRANSFORMER DIAGRAM SVG
