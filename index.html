@@ -26,7 +26,7 @@
   --dm:'JetBrains Mono','Courier New',monospace;
   --focus-ring:0 0 0 2px var(--bg),0 0 0 4px var(--accent);
 }
-html{scroll-behavior:smooth;overflow-anchor:none}
+html{scroll-behavior:smooth;overflow-anchor:none;scroll-padding-top:48px}
 body{background:var(--bg);color:var(--txt);font-family:var(--db);font-size:16px;line-height:1.8;overflow-x:hidden;-webkit-text-size-adjust:100%}
 ::selection{background:rgba(192,57,43,0.15);color:var(--ink)}
 a{color:var(--accent);text-decoration:none}
@@ -46,15 +46,20 @@ button:focus-visible,[role="button"]:focus-visible,input:focus-visible,textarea:
 ::-webkit-scrollbar-thumb{background:rgba(192,57,43,0.35);border-radius:0}
 
 /* ── Side Nav ── */
-.side-nav{position:fixed;left:22px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:9px}
-.nav-dot{width:9px;height:9px;border-radius:1px;border:1.5px solid var(--border);cursor:pointer;transition:.25s;position:relative;display:flex;align-items:center;justify-content:center}
-.nav-dot:hover,.nav-dot.active{border-color:var(--accent);background:var(--accent)}
-.nav-dot .nav-label{position:absolute;left:17px;top:50%;transform:translateY(-50%);white-space:nowrap;font-family:var(--ds);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--txt2);opacity:0;pointer-events:none;transition:.2s;background:var(--card);padding:4px 10px;border-radius:2px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(26,22,20,0.08)}
-.nav-dot:hover .nav-label,.nav-dot.active .nav-label,.nav-dot:focus-visible .nav-label{opacity:1;color:var(--accent)}
-.nav-dot:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:200;height:48px;background:rgba(245,241,235,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.top-nav-inner{display:flex;align-items:center;width:100%;height:100%;padding:0 20px;min-width:0}
+.top-nav-brand{font-family:var(--df);font-size:13px;font-weight:700;font-style:italic;color:var(--ink);white-space:nowrap;flex-shrink:0;margin-right:20px;letter-spacing:-.01em;user-select:none}
+.top-nav-links{display:flex;align-items:center;flex:1;overflow-x:auto;scrollbar-width:none;min-width:0}
+.top-nav-links::-webkit-scrollbar{display:none}
+.tnav-btn{border:none;background:none;font-family:var(--ds);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);cursor:pointer;padding:0 13px;height:48px;white-space:nowrap;flex-shrink:0;border-bottom:2px solid transparent;transition:.2s}
+.tnav-btn:hover{color:var(--ink)}
+.tnav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tnav-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.top-nav-v1{flex-shrink:0;margin-left:12px;font-family:var(--ds);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);text-decoration:none;border:1px solid var(--border);padding:4px 10px;border-radius:2px;transition:.2s;white-space:nowrap}
+.top-nav-v1:hover{color:var(--accent);border-color:var(--accent)}
 
 /* ── Progress Bar ── */
-.progress-bar{position:fixed;top:0;left:0;width:0%;height:2px;background:var(--accent);z-index:200;transition:width .1s}
+.progress-bar{position:fixed;top:0;left:0;width:0%;height:2px;background:var(--accent);z-index:300;transition:width .1s}
 
 /* ── Section Base ── */
 .section{min-height:100vh;min-height:100svh;padding:80px 80px 80px 72px;display:flex;align-items:center;position:relative;overflow:hidden}
@@ -102,7 +107,7 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
 /* ── SECTION 1: HERO ── */
 #s-intro{min-height:100vh;min-height:100svh;padding:0;display:block;position:relative;overflow:hidden;background:var(--bg)}
 #hero-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0.45}
-.hero-content{position:relative;z-index:1;padding:120px 80px 80px 80px;max-width:920px}
+.hero-content{position:relative;z-index:1;padding:168px 80px 80px 80px;max-width:920px}
 .hero-sub{font-size:17px;color:var(--txt);max-width:540px;margin-bottom:36px;line-height:1.75;font-family:var(--db)}
 .hero-stats{display:flex;gap:0;flex-wrap:wrap;margin-bottom:48px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .stat-item{display:flex;flex-direction:column;gap:4px;padding:16px 28px 16px 0;margin-right:28px;border-right:1px solid var(--border)}
@@ -268,23 +273,15 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
 @keyframes node-pulse{0%,100%{r:4}50%{r:6}}
 @keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
-/* ── Mobile Bottom Nav ── */
-.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(245,241,235,0.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.mobile-nav-inner{display:flex;min-width:max-content;padding:0 8px}
-.mobile-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 12px;cursor:pointer;border:none;background:none;color:var(--txt2);font-family:var(--ds);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transition:.2s;white-space:nowrap;min-height:60px;min-width:72px;flex-shrink:0}
-.mobile-nav-btn .mnav-dot{width:6px;height:6px;border-radius:1px;border:1.5px solid var(--border);transition:.3s}
-.mobile-nav-btn.active,.mobile-nav-btn:focus-visible{color:var(--accent)}
-.mobile-nav-btn.active .mnav-dot,.mobile-nav-btn:focus-visible .mnav-dot{background:var(--accent);border-color:var(--accent)}
 
 /* ── Responsive ── */
 @media(max-width:900px){
   .section{padding:60px 24px 80px 24px}
-  .side-nav{display:none}
-  .mobile-nav{display:block}
+  .top-nav-brand{display:none}
   .two-col{grid-template-columns:1fr;gap:40px}
   .three-col{grid-template-columns:1fr}
   .psych-grid{grid-template-columns:1fr}
-  .hero-content{padding:80px 24px 80px}
+  .hero-content{padding:128px 24px 80px}
   h1.hero-title{font-size:52px}
   h2.section-title{font-size:40px}
   .training-stages{grid-template-columns:repeat(2,1fr)}
@@ -344,25 +341,29 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
 </style>
 </head>
 <body>
-<a href="v1.html" style="position:fixed;top:12px;right:16px;z-index:9999;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8A5E1A;border:1px solid rgba(138,94,26,0.3);padding:5px 12px;border-radius:2px;background:rgba(245,241,235,0.93);backdrop-filter:blur(8px);text-decoration:none;transition:all .2s" onmouseover="this.style.borderColor='rgba(192,57,43,0.5)';this.style.color='#C0392B'" onmouseout="this.style.borderColor='rgba(138,94,26,0.3)';this.style.color='#8A5E1A'">← v1 original</a>
-
 <a href="#main-content" class="skip-link">Skip to main content</a>
 
 <!-- Progress Bar -->
 <div class="progress-bar" id="progress-bar" role="progressbar" aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
 
-<!-- Side Nav -->
-<nav class="side-nav" id="side-nav" aria-label="Chapter navigation">
-  <div class="nav-dot active" data-section="s-intro" role="button" tabindex="0" aria-label="Introduction" aria-current="true"><span class="nav-label" aria-hidden="true">Introduction</span></div>
-  <div class="nav-dot" data-section="s-data" role="button" tabindex="0" aria-label="Data Collection"><span class="nav-label" aria-hidden="true">Data Collection</span></div>
-  <div class="nav-dot" data-section="s-tokenizer" role="button" tabindex="0" aria-label="Tokenization"><span class="nav-label" aria-hidden="true">Tokenization</span></div>
-  <div class="nav-dot" data-section="s-training" role="button" tabindex="0" aria-label="Neural Network Training"><span class="nav-label" aria-hidden="true">Training</span></div>
-  <div class="nav-dot" data-section="s-inference" role="button" tabindex="0" aria-label="Inference &amp; Sampling"><span class="nav-label" aria-hidden="true">Inference</span></div>
-  <div class="nav-dot" data-section="s-basemodel" role="button" tabindex="0" aria-label="Base Model"><span class="nav-label" aria-hidden="true">Base Model</span></div>
-  <div class="nav-dot" data-section="s-posttraining" role="button" tabindex="0" aria-label="Post-Training"><span class="nav-label" aria-hidden="true">Post-Training</span></div>
-  <div class="nav-dot" data-section="s-psychology" role="button" tabindex="0" aria-label="LLM Psychology"><span class="nav-label" aria-hidden="true">LLM Psychology</span></div>
-  <div class="nav-dot" data-section="s-rag" role="button" tabindex="0" aria-label="Retrieval-Augmented Generation"><span class="nav-label" aria-hidden="true">RAG</span></div>
-  <div class="nav-dot" data-section="s-summary" role="button" tabindex="0" aria-label="Full Pipeline Summary"><span class="nav-label" aria-hidden="true">Full Pipeline</span></div>
+<!-- Top Nav -->
+<nav class="top-nav" id="top-nav" aria-label="Chapter navigation">
+  <div class="top-nav-inner">
+    <span class="top-nav-brand" aria-hidden="true">How LLMs Work</span>
+    <div class="top-nav-links" id="top-nav-links">
+      <button class="tnav-btn active" data-section="s-intro" aria-current="true">Intro</button>
+      <button class="tnav-btn" data-section="s-data">Data</button>
+      <button class="tnav-btn" data-section="s-tokenizer">Tokens</button>
+      <button class="tnav-btn" data-section="s-training">Training</button>
+      <button class="tnav-btn" data-section="s-inference">Inference</button>
+      <button class="tnav-btn" data-section="s-basemodel">Base Model</button>
+      <button class="tnav-btn" data-section="s-posttraining">Post-Train</button>
+      <button class="tnav-btn" data-section="s-psychology">Psychology</button>
+      <button class="tnav-btn" data-section="s-rag">RAG</button>
+      <button class="tnav-btn" data-section="s-summary">Pipeline</button>
+    </div>
+    <a href="v1.html" class="top-nav-v1">← v1</a>
+  </div>
 </nav>
 
 <!-- ━━━━━━━━ SECTION 1: HERO ━━━━━━━━ -->
@@ -927,21 +928,6 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
   </div>
 </section>
 
-<!-- ━━━━━━━━ MOBILE BOTTOM NAV ━━━━━━━━ -->
-<nav class="mobile-nav" aria-label="Chapter navigation">
-  <div class="mobile-nav-inner">
-    <button class="mobile-nav-btn active" data-section="s-intro" aria-current="true"><div class="mnav-dot"></div>Intro</button>
-    <button class="mobile-nav-btn" data-section="s-data"><div class="mnav-dot"></div>Data</button>
-    <button class="mobile-nav-btn" data-section="s-tokenizer"><div class="mnav-dot"></div>Tokens</button>
-    <button class="mobile-nav-btn" data-section="s-training"><div class="mnav-dot"></div>Training</button>
-    <button class="mobile-nav-btn" data-section="s-inference"><div class="mnav-dot"></div>Inference</button>
-    <button class="mobile-nav-btn" data-section="s-basemodel"><div class="mnav-dot"></div>Base Model</button>
-    <button class="mobile-nav-btn" data-section="s-posttraining"><div class="mnav-dot"></div>Post-Train</button>
-    <button class="mobile-nav-btn" data-section="s-psychology"><div class="mnav-dot"></div>Psychology</button>
-    <button class="mobile-nav-btn" data-section="s-rag"><div class="mnav-dot"></div>RAG</button>
-    <button class="mobile-nav-btn" data-section="s-summary"><div class="mnav-dot"></div>Summary</button>
-  </div>
-</nav>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -1608,8 +1594,7 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
 // ═══════════════════════════════════════════════
 (function(){
   const sections = document.querySelectorAll('.section');
-  const navDots = document.querySelectorAll('.nav-dot');
-  const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+  const navDots = document.querySelectorAll('.tnav-btn');
   const progressBar = document.getElementById('progress-bar');
   const pipelineStages = document.querySelectorAll('.pipeline-stage');
 
@@ -1647,17 +1632,13 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
   const summarySection = document.getElementById('s-summary');
   if (summarySection) pipelineObserver.observe(summarySection);
 
-  // Update both navs when section changes
+  // Update nav when section changes
   function setActiveNav(sectionId) {
-    navDots.forEach(dot => {
-      const isActive = dot.dataset.section === sectionId;
-      dot.classList.toggle('active', isActive);
-      dot.setAttribute('aria-current', isActive ? 'true' : 'false');
-    });
-    mobileNavBtns.forEach(btn => {
+    navDots.forEach(btn => {
       const isActive = btn.dataset.section === sectionId;
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+      if (isActive) btn.scrollIntoView({block:'nearest',inline:'center'});
     });
   }
 
@@ -1675,14 +1656,7 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
     if (section) section.scrollIntoView({ behavior: 'smooth' });
   }
 
-  navDots.forEach(dot => {
-    dot.addEventListener('click', () => handleNavClick(dot.dataset.section));
-    dot.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNavClick(dot.dataset.section); }
-    });
-  });
-
-  mobileNavBtns.forEach(btn => {
+  navDots.forEach(btn => {
     btn.addEventListener('click', () => handleNavClick(btn.dataset.section));
   });
 
