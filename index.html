@@ -307,6 +307,40 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
 
 /* divider */
 .section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);max-width:1280px;margin:0 auto}
+
+/* ── RAG Section ── */
+.rag-two-col{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-bottom:48px}
+.rag-step-group{margin-bottom:20px}
+.rag-step-num{font-family:var(--dm);font-size:10px;color:#F97316;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.rag-flow{display:flex;flex-direction:column;gap:0;align-items:stretch}
+.rag-flow-step{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;transition:.4s}
+.rag-flow-step.rag-active{border-color:rgba(249,115,22,0.5);box-shadow:0 0 16px rgba(249,115,22,0.1);background:rgba(249,115,22,0.04)}
+.rag-flow-label{font-family:var(--dm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;color:var(--txt2)}
+.rag-flow-step.rag-active .rag-flow-label{color:#F97316}
+.rag-flow-content{font-size:13px;color:var(--txt);line-height:1.5}
+.rag-flow-connector{width:1px;height:22px;background:linear-gradient(to bottom,rgba(249,115,22,0.4),rgba(249,115,22,0.15));margin:0 auto;position:relative}
+.rag-flow-connector::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid rgba(249,115,22,0.45)}
+.rag-docs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.rag-doc-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--txt);transition:.4s;line-height:1.5}
+.rag-doc-card.rag-retrieved{border-color:rgba(249,115,22,0.5);background:rgba(249,115,22,0.06);box-shadow:0 0 10px rgba(249,115,22,0.08)}
+.rag-doc-num{font-family:var(--dm);font-size:10px;color:var(--txt2);margin-bottom:4px;transition:.3s}
+.rag-doc-card.rag-retrieved .rag-doc-num{color:#F97316}
+.rag-ctx-box{background:rgba(249,115,22,0.04);border:1px solid rgba(249,115,22,0.2);border-radius:8px;padding:14px 16px;font-family:var(--dm);font-size:12px;margin-bottom:20px;transition:opacity .5s;opacity:0}
+.rag-ctx-box.rag-visible{opacity:1}
+.rag-ctx-title{font-size:10px;color:#F97316;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.rag-ctx-line{color:var(--txt);padding:3px 0;border-bottom:1px solid var(--border);margin-bottom:2px;font-size:11px}
+.rag-ctx-line.ctx-injected{color:#F97316}
+.rag-ctx-line.ctx-query{color:var(--cyan)}
+.rag-compare{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.rag-answer-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.rag-answer-box.no-rag{border-color:rgba(255,82,82,0.25)}
+.rag-answer-box.with-rag{border-color:rgba(0,214,143,0.25)}
+.rag-answer-lbl{font-family:var(--dm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.rag-answer-box.no-rag .rag-answer-lbl{color:var(--red)}
+.rag-answer-box.with-rag .rag-answer-lbl{color:var(--green)}
+.rag-answer-text{font-size:13.5px;color:var(--txt);line-height:1.6;font-style:italic;min-height:52px}
+.rag-answer-badge{font-family:var(--dm);font-size:10px;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:10px}
+@media(max-width:900px){.rag-two-col{grid-template-columns:1fr}.rag-docs{grid-template-columns:1fr}.rag-compare{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -326,6 +360,7 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
   <div class="nav-dot" data-section="s-basemodel" role="button" tabindex="0" aria-label="Base Model"><span class="nav-label" aria-hidden="true">Base Model</span></div>
   <div class="nav-dot" data-section="s-posttraining" role="button" tabindex="0" aria-label="Post-Training"><span class="nav-label" aria-hidden="true">Post-Training</span></div>
   <div class="nav-dot" data-section="s-psychology" role="button" tabindex="0" aria-label="LLM Psychology"><span class="nav-label" aria-hidden="true">LLM Psychology</span></div>
+  <div class="nav-dot" data-section="s-rag" role="button" tabindex="0" aria-label="Retrieval-Augmented Generation"><span class="nav-label" aria-hidden="true">RAG</span></div>
   <div class="nav-dot" data-section="s-summary" role="button" tabindex="0" aria-label="Full Pipeline Summary"><span class="nav-label" aria-hidden="true">Full Pipeline</span></div>
 </nav>
 
@@ -699,6 +734,114 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
   </div>
 </section>
 
+<!-- ━━━━━━━━ SECTION RAG: RETRIEVAL-AUGMENTED GENERATION ━━━━━━━━ -->
+<section id="s-rag" class="section" aria-label="Retrieval-Augmented Generation">
+  <div class="section-inner">
+    <div class="fade-up" style="margin-bottom:44px">
+      <div class="chapter-badge" style="color:#F97316">Applied LLMs · RAG</div>
+      <h2 class="section-title">Retrieval-Augmented<br>Generation</h2>
+      <p class="body-text" style="max-width:680px">LLMs have a knowledge cutoff and a finite context window. RAG solves this by <em>embedding</em> your documents into a vector store, retrieving the most semantically relevant chunks at query time, and injecting them into the context — shifting the model's prediction distribution toward grounded, up-to-date facts rather than memorized training data.</p>
+    </div>
+
+    <div class="rag-two-col fade-up">
+      <!-- Left: explanation + scatter canvas -->
+      <div>
+        <div class="rag-step-group">
+          <div class="rag-step-num">Step 01 — Embed everything</div>
+          <p class="body-text" style="margin-bottom:0">Every document is converted to a dense vector (~1,536 numbers) by an embedding model. Semantically similar texts land near each other in this high-dimensional space — no keyword matching needed.</p>
+        </div>
+        <canvas id="rag-canvas" width="500" height="200" aria-label="2D projection of document embedding space" role="img" style="width:100%;height:200px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin:10px 0 24px;display:block"></canvas>
+        <div class="rag-step-group">
+          <div class="rag-step-num">Step 02 — Embed the query &amp; search</div>
+          <p class="body-text" style="margin-bottom:0">The user's question is embedded the same way. Cosine similarity finds the nearest document vectors — the chunks most semantically related to the query — typically the top 2–5.</p>
+        </div>
+        <div class="rag-step-group" style="margin-top:20px">
+          <div class="rag-step-num">Step 03 — Inject &amp; generate</div>
+          <p class="body-text" style="margin-bottom:0">Retrieved chunks are prepended to the prompt before the LLM sees the question. The model generates from injected facts rather than relying on memorized training data — dramatically reducing hallucination on knowledge-intensive tasks.</p>
+        </div>
+      </div>
+
+      <!-- Right: pipeline flow -->
+      <div class="rag-flow" id="rag-flow" role="list" aria-label="RAG pipeline steps">
+        <div class="rag-flow-step" id="rag-s1" role="listitem">
+          <div class="rag-flow-label">1 · User Query</div>
+          <div class="rag-flow-content" style="color:var(--cyan);font-family:var(--dm);font-size:12px">"What is the capital of Ares Base?"</div>
+        </div>
+        <div class="rag-flow-connector"></div>
+        <div class="rag-flow-step" id="rag-s2" role="listitem">
+          <div class="rag-flow-label">2 · Embedding Model</div>
+          <div class="rag-flow-content">Text → <span style="color:#F97316;font-family:var(--dm);font-size:11px">[0.23, −0.87, 0.41, ...]</span> <span style="color:var(--txt2);font-size:12px">~1,536 floats</span></div>
+        </div>
+        <div class="rag-flow-connector"></div>
+        <div class="rag-flow-step" id="rag-s3" role="listitem">
+          <div class="rag-flow-label">3 · Vector DB — Cosine Search</div>
+          <div class="rag-flow-content">Find top-k nearest neighbors in embedding space</div>
+        </div>
+        <div class="rag-flow-connector"></div>
+        <div class="rag-flow-step" id="rag-s4" role="listitem">
+          <div class="rag-flow-label">4 · Retrieved Chunks (top 2)</div>
+          <div class="rag-flow-content" style="color:var(--txt2);font-size:12px;font-family:var(--dm)">Doc 1: "Ares Base established 2031..."<br>Doc 2: "Capital is New Houston, 312 colonists..."</div>
+        </div>
+        <div class="rag-flow-connector"></div>
+        <div class="rag-flow-step" id="rag-s5" role="listitem">
+          <div class="rag-flow-label">5 · Context Window (assembled)</div>
+          <div class="rag-flow-content" style="font-family:var(--dm);font-size:11px;line-height:1.7">
+            <span style="color:#F97316">[Retrieved] Ares Base est. 2031...</span><br>
+            <span style="color:#F97316">[Retrieved] Capital: New Houston...</span><br>
+            <span style="color:var(--cyan)">[Query] What is the capital...?</span>
+          </div>
+        </div>
+        <div class="rag-flow-connector"></div>
+        <div class="rag-flow-step" id="rag-s6" role="listitem" style="background:linear-gradient(135deg,rgba(0,229,255,0.05),transparent)">
+          <div class="rag-flow-label">6 · LLM → Grounded Answer</div>
+          <div class="rag-flow-content" style="color:var(--green)">"The capital of Ares Base is New Houston."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive demo -->
+    <div class="fade-up" style="margin-top:8px">
+      <h3 class="sub-title" style="color:#F97316;margin-bottom:16px">Effect on Predictions</h3>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="insight-box" style="flex:1;min-width:260px;margin-top:0">
+          <strong style="color:#F97316">Query</strong>
+          "What is the administrative capital of the Ares Base colony?"
+        </div>
+        <button class="btn btn-primary" id="rag-run-btn" style="background:#F97316;color:#000;white-space:nowrap" aria-label="Run RAG pipeline animation">▶ Run RAG Query</button>
+        <button class="btn btn-ghost" id="rag-reset-btn" style="border-color:rgba(249,115,22,0.3);color:#F97316" aria-label="Reset RAG demo">Reset</button>
+      </div>
+
+      <div class="rag-step-num" style="margin-bottom:10px">Knowledge Base — 4 documents</div>
+      <div class="rag-docs">
+        <div class="rag-doc-card" id="rdoc-0"><div class="rag-doc-num">DOC 1</div>The Mars colony Ares Base was established in 2031 near Hellas Planitia.</div>
+        <div class="rag-doc-card" id="rdoc-1"><div class="rag-doc-num">DOC 2</div>The administrative capital of Ares Base is New Houston, housing 312 colonists.</div>
+        <div class="rag-doc-card" id="rdoc-2"><div class="rag-doc-num">DOC 3</div>Mars surface temperature averages −63°C with seasonal variation near the poles.</div>
+        <div class="rag-doc-card" id="rdoc-3"><div class="rag-doc-num">DOC 4</div>The first crewed Mars mission launched from Kennedy Space Center in 2029.</div>
+      </div>
+
+      <div class="rag-ctx-box" id="rag-ctx-box">
+        <div class="rag-ctx-title">Context Window — sent to LLM</div>
+        <div class="rag-ctx-line ctx-injected">📄 [Retrieved] The Mars colony Ares Base was established in 2031 near Hellas Planitia.</div>
+        <div class="rag-ctx-line ctx-injected">📄 [Retrieved] The administrative capital of Ares Base is New Houston, housing 312 colonists.</div>
+        <div class="rag-ctx-line ctx-query">❓ [Query] What is the administrative capital of the Ares Base colony?</div>
+      </div>
+
+      <div class="rag-compare">
+        <div class="rag-answer-box no-rag">
+          <div class="rag-answer-lbl">✕ Without RAG</div>
+          <div class="rag-answer-text">"I don't have reliable information about a colony called Ares Base. As of my training cutoff, no such Mars colony has been established..."</div>
+          <span class="rag-answer-badge" style="color:var(--red);background:var(--red-d)">Hallucination / Refusal</span>
+        </div>
+        <div class="rag-answer-box with-rag">
+          <div class="rag-answer-lbl">✓ With RAG</div>
+          <div class="rag-answer-text" id="rag-ans-good" style="opacity:0.3">"The administrative capital of Ares Base is <strong style="color:var(--green)">New Houston</strong>, which houses 312 colonists. The colony was established in 2031 near Hellas Planitia."</div>
+          <span class="rag-answer-badge" id="rag-good-badge" style="color:var(--green);background:var(--green-d);opacity:0.3">Grounded in retrieved context</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ━━━━━━━━ SECTION 9: FULL PIPELINE ━━━━━━━━ -->
 <section id="s-summary" class="section" aria-label="Full Pipeline Summary">
   <div class="section-inner">
@@ -788,6 +931,7 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
     <button class="mobile-nav-btn" data-section="s-basemodel"><div class="mnav-dot"></div>Base Model</button>
     <button class="mobile-nav-btn" data-section="s-posttraining"><div class="mnav-dot"></div>Post-Train</button>
     <button class="mobile-nav-btn" data-section="s-psychology"><div class="mnav-dot"></div>Psychology</button>
+    <button class="mobile-nav-btn" data-section="s-rag"><div class="mnav-dot"></div>RAG</button>
     <button class="mobile-nav-btn" data-section="s-summary"><div class="mnav-dot"></div>Summary</button>
   </div>
 </nav>
@@ -1550,6 +1694,140 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.8;margin-bottom:16px
       this.setAttribute('aria-pressed', 'true');
     });
   });
+})();
+
+// ═══════════════════════════════════════════════
+// RAG SECTION — Scatter canvas + demo animation
+// ═══════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('rag-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // 2D projections of doc embeddings (made-up but visually coherent clusters)
+  const dots = [
+    // Cluster A: Mars colony / capital / population
+    {x: .28, y: .38, c: 'rgba(0,229,255,0.55)', r: 5, lbl: 'colony', retrieved: false},
+    {x: .34, y: .30, c: 'rgba(0,229,255,0.55)', r: 5, lbl: 'capital', retrieved: false},
+    {x: .22, y: .44, c: 'rgba(0,229,255,0.45)', r: 4, lbl: 'colonists', retrieved: false},
+    {x: .30, y: .52, c: 'rgba(0,229,255,0.35)', r: 4, lbl: '', retrieved: false},
+    // Cluster B: Mars science / temperature / geography
+    {x: .68, y: .32, c: 'rgba(122,149,184,0.5)', r: 5, lbl: 'temperature', retrieved: false},
+    {x: .74, y: .40, c: 'rgba(122,149,184,0.5)', r: 4, lbl: 'climate', retrieved: false},
+    {x: .62, y: .25, c: 'rgba(122,149,184,0.4)', r: 4, lbl: 'geography', retrieved: false},
+    // Cluster C: space missions / launch
+    {x: .60, y: .70, c: 'rgba(122,149,184,0.45)', r: 5, lbl: 'mission', retrieved: false},
+    {x: .68, y: .62, c: 'rgba(122,149,184,0.4)', r: 4, lbl: 'launch', retrieved: false},
+    {x: .54, y: .76, c: 'rgba(122,149,184,0.35)', r: 4, lbl: '', retrieved: false},
+    // Query dot (orange, shown after observer fires)
+    {x: .31, y: .33, c: '#F97316', r: 7, lbl: 'query ▲', isQuery: true}
+  ];
+
+  let showQuery = false, showLines = false;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // Subtle grid
+    ctx.strokeStyle = 'rgba(30,60,100,0.12)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 44) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    // Cluster region labels
+    ctx.font = '10px JetBrains Mono,monospace';
+    ctx.fillStyle = 'rgba(0,229,255,0.2)';
+    ctx.fillText('colony / capital cluster', .06*W, .75*H);
+    ctx.fillStyle = 'rgba(122,149,184,0.2)';
+    ctx.fillText('science cluster', .55*W, .52*H);
+    // Lines from query to nearest 2 docs
+    if (showLines) {
+      const q = dots[dots.length-1];
+      [dots[0], dots[1]].forEach(d => {
+        const g = ctx.createLinearGradient(q.x*W,q.y*H,d.x*W,d.y*H);
+        g.addColorStop(0,'rgba(249,115,22,0.7)'); g.addColorStop(1,'rgba(0,229,255,0.5)');
+        ctx.strokeStyle = g; ctx.lineWidth = 1.5;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(q.x*W,q.y*H); ctx.lineTo(d.x*W,d.y*H); ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+    // Dots
+    dots.forEach((d, i) => {
+      if (d.isQuery && !showQuery) return;
+      const x = d.x*W, y = d.y*H;
+      const isNearest = showLines && (i === 0 || i === 1);
+      ctx.shadowColor = d.isQuery ? '#F97316' : (isNearest ? '#00E5FF' : 'transparent');
+      ctx.shadowBlur = d.isQuery ? 14 : (isNearest ? 8 : 0);
+      ctx.beginPath();
+      ctx.arc(x, y, isNearest ? d.r+1 : d.r, 0, Math.PI*2);
+      ctx.fillStyle = isNearest ? '#00E5FF' : d.c;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // Labels
+      if (d.lbl) {
+        ctx.font = '9px JetBrains Mono,monospace';
+        ctx.fillStyle = d.isQuery ? '#F97316' : (isNearest ? '#00E5FF' : 'rgba(122,149,184,0.6)');
+        ctx.fillText(d.lbl, x + d.r + 3, y + 3);
+      }
+    });
+  }
+
+  draw();
+
+  // Show query dot on section scroll
+  const ragSec = document.getElementById('s-rag');
+  let seenOnce = false;
+  const obs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !seenOnce) {
+      seenOnce = true;
+      setTimeout(() => { showQuery = true; draw(); }, 500);
+    }
+  }, {threshold: 0.2});
+  if (ragSec) obs.observe(ragSec);
+
+  // ── Demo controls ──
+  const runBtn    = document.getElementById('rag-run-btn');
+  const resetBtn  = document.getElementById('rag-reset-btn');
+  const flowSteps = [1,2,3,4,5,6].map(i => document.getElementById('rag-s'+i));
+  const doc0      = document.getElementById('rdoc-0');
+  const doc1      = document.getElementById('rdoc-1');
+  const ctxBox    = document.getElementById('rag-ctx-box');
+  const ansGood   = document.getElementById('rag-ans-good');
+  const goodBadge = document.getElementById('rag-good-badge');
+
+  function resetDemo() {
+    flowSteps.forEach(s => s && s.classList.remove('rag-active'));
+    doc0 && doc0.classList.remove('rag-retrieved');
+    doc1 && doc1.classList.remove('rag-retrieved');
+    if (ctxBox) ctxBox.classList.remove('rag-visible');
+    if (ansGood) ansGood.style.opacity = '0.3';
+    if (goodBadge) goodBadge.style.opacity = '0.3';
+    showLines = false; draw();
+    if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run RAG Query'; }
+  }
+
+  function runDemo() {
+    if (!runBtn) return;
+    runBtn.disabled = true; runBtn.textContent = 'Running…';
+    const timings = [0, 700, 1400, 2100, 2900, 3700];
+    timings.forEach((t, i) => {
+      setTimeout(() => {
+        flowSteps.forEach(s => s && s.classList.remove('rag-active'));
+        flowSteps[i] && flowSteps[i].classList.add('rag-active');
+        if (i === 2) { showLines = true; draw(); }
+        if (i === 3) { doc0 && doc0.classList.add('rag-retrieved'); doc1 && doc1.classList.add('rag-retrieved'); }
+        if (i === 4) { ctxBox && ctxBox.classList.add('rag-visible'); }
+        if (i === 5) {
+          if (ansGood) ansGood.style.opacity = '1';
+          if (goodBadge) goodBadge.style.opacity = '1';
+          runBtn.disabled = false; runBtn.textContent = '▶ Run Again';
+        }
+      }, t);
+    });
+  }
+
+  runBtn  && runBtn.addEventListener('click',  () => { resetDemo(); setTimeout(runDemo, 80); });
+  resetBtn && resetBtn.addEventListener('click', resetDemo);
 })();
 </script>
 </body>
