@@ -29,3 +29,11 @@ Based on Andrej Karpathy's [Intro to Large Language Models](https://www.youtube.
 | `index.html` | Main site (v2 redesign) |
 | `v1.html` | Original dark-theme version |
 | `transcript.txt` | Full Karpathy lecture transcript |
+| `council.py` | LLM council fact-checker (runs via `uv run council.py`) |
+| `report.html` | Latest council fact-check report |
+
+---
+
+## Vibe check
+
+The code and content in this repo is mostly LLM-generated (Claude via Claude Code). The ideas, direction, and editorial decisions are mine — the implementation was largely written by AI. The council fact-checker exists precisely because of this: automated content warrants automated verification.
