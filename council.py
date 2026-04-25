@@ -16,6 +16,7 @@ Usage:
 import os
 import json
 import re
+import random
 import datetime
 from html.parser import HTMLParser
 from openai import OpenAI
@@ -161,26 +162,47 @@ def main():
         reviews[label] = issues
         print(f"     {label}: {len(issues)} issue(s) flagged")
 
-    # Build report section for synthesiser
-    reports_text = ""
-    for label, issues in reviews.items():
-        reports_text += f"\n### {label}\n"
+    # Anonymise before sending to synthesiser — shuffle order and use
+    # generic labels so Opus can't weight by model identity
+    labels = list(reviews.keys())
+    random.shuffle(labels)
+    anon_map = {label: f"Reviewer {chr(65 + i)}" for i, label in enumerate(labels)}
+
+    anon_reports_text = ""
+    for label in labels:
+        issues = reviews[label]
+        anon_label = anon_map[label]
+        anon_reports_text += f"\n### {anon_label}\n"
         if issues:
             for issue in issues:
-                reports_text += (
+                anon_reports_text += (
                     f"- **Claim:** {issue.get('claim','?')}\n"
                     f"  **Verdict:** {issue.get('verdict','?')}\n"
                     f"  **Explanation:** {issue.get('explanation','?')}\n"
                 )
         else:
-            reports_text += "- No issues found.\n"
+            anon_reports_text += "- No issues found.\n"
 
     synth_prompt = SYNTHESISER_PROMPT.format(
-        n=len(COUNCIL), reports=reports_text
+        n=len(COUNCIL), reports=anon_reports_text
     )
 
-    print(f"\nSynthesising with {SYNTHESISER[0]}...")
+    print(f"\nSynthesising with {SYNTHESISER[0]} (reviewers anonymised)...")
     synthesis = call(SYNTHESISER[1], synth_prompt, SYNTHESISER[0])
+
+    # Build deanonymised raw section for the report
+    raw_text = ""
+    for label, issues in reviews.items():
+        raw_text += f"\n### {label} (was {anon_map[label]})\n"
+        if issues:
+            for issue in issues:
+                raw_text += (
+                    f"- **Claim:** {issue.get('claim','?')}\n"
+                    f"  **Verdict:** {issue.get('verdict','?')}\n"
+                    f"  **Explanation:** {issue.get('explanation','?')}\n"
+                )
+        else:
+            raw_text += "- No issues found.\n"
 
     # Write report
     report_path = os.path.join(os.path.dirname(__file__), "council_report.md")
@@ -190,10 +212,10 @@ def main():
         f.write(f"# LLM Council Fact-Check Report\n")
         f.write(f"**Generated:** {timestamp}  \n")
         f.write(f"**Council:** {council_names}  \n")
-        f.write(f"**Synthesised by:** {SYNTHESISER[0]}\n\n---\n\n")
+        f.write(f"**Synthesised by:** {SYNTHESISER[0]} (reviewed anonymised inputs)\n\n---\n\n")
         f.write(synthesis)
         f.write("\n\n---\n\n## Raw Findings by Model\n")
-        f.write(reports_text)
+        f.write(raw_text)
 
     print(f"\nDone. Report written to council_report.md")
 
