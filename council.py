@@ -30,12 +30,12 @@ client = OpenAI(
 )
 
 COUNCIL = [
-    ("GPT-4o",          "openai/gpt-4o"),
-    ("Gemini 2.0 Flash","google/gemini-2.0-flash-001"),
-    ("Llama 3.3 70B",   "meta-llama/llama-3.3-70b-instruct"),
+    ("GPT-4.1",          "openai/gpt-4.1"),
+    ("Gemini 2.5 Pro",   "google/gemini-2.5-pro-preview-05-06"),
+    ("Llama 4 Maverick", "meta-llama/llama-4-maverick"),
 ]
 
-SYNTHESISER = ("Claude Sonnet", "anthropic/claude-sonnet-4-5")
+SYNTHESISER = ("Claude Opus 4.7", "anthropic/claude-opus-4-7")
 
 # ── Extract readable text from HTML ──────────────────────────────────────────
 
