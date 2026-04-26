@@ -15,10 +15,11 @@
   --border:#D8D0C2;--border-b:rgba(192,57,43,0.3);
   --accent:#C0392B;--accent-d:rgba(192,57,43,0.08);--accent-g:rgba(192,57,43,0.04);
   --amber:#8A5E1A;--amber-d:rgba(138,94,26,0.08);
+  --cyan:#1A6E8A;--cyan-d:rgba(26,110,138,0.08);
   --purple:#2C5282;--purple-d:rgba(44,82,130,0.08);
   --green:#276749;--green-d:rgba(39,103,73,0.08);
   --red:#B91C1C;--red-d:rgba(185,28,28,0.08);
-  --txt:#4A3D35;--txt2:#7B6E66;--txt-b:#1A1614;
+  --txt:#4A3D35;--txt2:#786C64;--txt-b:#1A1614;
   --ink:#1A1614;--ink-inv:#F5F1EB;
   --df:'Playfair Display',Georgia,serif;
   --ds:'Barlow Condensed','Arial Narrow',sans-serif;
@@ -367,13 +368,13 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
       <button class="tnav-btn" data-section="s-rag">RAG</button>
       <button class="tnav-btn" data-section="s-summary">Pipeline</button>
     </div>
-    <a href="v1.html" class="top-nav-v1">← v1</a>
+    <a href="v1.html" class="top-nav-v1" aria-label="View original version 1">← v1</a>
   </div>
 </nav>
 
 <!-- ━━━━━━━━ SECTION 1: HERO ━━━━━━━━ -->
 <section id="s-intro" class="section" aria-label="Introduction">
-  <canvas id="hero-canvas" role="img" aria-label="Animated neural network visualization" aria-hidden="true"></canvas>
+  <canvas id="hero-canvas" aria-hidden="true"></canvas>
   <div class="hero-content" id="main-content">
     <div class="chapter-badge" aria-hidden="true">A Visual Deep Dive</div>
     <div class="hero-grid">
@@ -1511,7 +1512,8 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
     navDots.forEach(btn => {
       const isActive = btn.dataset.section === sectionId;
       btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+      if (isActive) btn.setAttribute('aria-current', 'true');
+      else btn.removeAttribute('aria-current');
       if (isActive) btn.scrollIntoView({block:'nearest',inline:'center'});
     });
   }
