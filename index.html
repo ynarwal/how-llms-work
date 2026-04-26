@@ -56,9 +56,6 @@ button:focus-visible,[role="button"]:focus-visible,input:focus-visible,textarea:
 .tnav-btn:hover{color:var(--ink)}
 .tnav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tnav-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
-.top-nav-v1{flex-shrink:0;margin-left:12px;font-family:var(--ds);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);text-decoration:none;border:1px solid var(--border);padding:4px 10px;border-radius:2px;transition:.2s;white-space:nowrap}
-.top-nav-v1:hover{color:var(--accent);border-color:var(--accent)}
-
 /* ── Progress Bar ── */
 .progress-bar{position:fixed;top:0;left:0;width:0%;height:2px;background:var(--accent);z-index:300;transition:width .1s}
 
@@ -368,7 +365,6 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
       <button class="tnav-btn" data-section="s-rag">RAG</button>
       <button class="tnav-btn" data-section="s-summary">Pipeline</button>
     </div>
-    <a href="v1.html" class="top-nav-v1" aria-label="View original version 1">← v1</a>
   </div>
 </nav>
 
@@ -929,6 +925,8 @@ p.body-text{color:var(--txt);font-size:16px;line-height:1.85;margin-bottom:16px}
         <a href="hn-update-comment.txt" target="_blank" rel="noopener" style="color:var(--txt2);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--txt2)';this.style.borderColor='var(--border)'">HN update note</a>
         <span style="margin:0 12px;opacity:.4">·</span>
         <a href="report.html" style="color:var(--txt2);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--txt2)';this.style.borderColor='var(--border)'">LLM council report</a>
+        <span style="margin:0 12px;opacity:.4">·</span>
+        <a href="v1.html" style="color:var(--txt2);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--txt2)';this.style.borderColor='var(--border)'">v1 (original)</a>
       </p>
     </div>
   </div>
