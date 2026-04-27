@@ -295,8 +295,15 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.75;margin-bottom:16p
 }
 @media(max-width:600px){
   .rlhf-row{flex-direction:column}
-  .hero-stats{gap:0}
   .inference-controls{flex-direction:column;align-items:flex-start}
+  #hero-canvas{opacity:0.12}
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;border:none;gap:0;margin-bottom:32px}
+  .stat-item{padding:14px 16px;margin-right:0;border-right:none;border-bottom:1px solid var(--border)}
+  .stat-item:nth-child(odd){border-right:1px solid var(--border)}
+  .stat-item:nth-last-child(-n+2){border-bottom:none}
+  .stat-val{font-size:28px}
+  .hero-grid{gap:32px}
+  .hero-content{padding:100px 20px 60px}
 }
 
 /* ── Reduced Motion ── */
