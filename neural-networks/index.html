@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Networks from Scratch — A Visual Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.code-block{background:var(--ink);color:#A5B4FC;font-family:var(--dm);font-size:12.5px;line-height:1.75;padding:18px 20px;border-radius:var(--radius);margin:16px 0;overflow-x:auto;border:1px solid rgba(255,255,255,0.06)}
+.code-block .co{color:rgba(255,255,255,0.35)}
+.code-block .kw{color:#C084FC}
+.code-block .st{color:#86EFAC}
+.code-block .nm{color:#FCA5A5}
+.code-block .fn{color:#7DD3FC}
+.code-line-explain{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);padding:14px 18px;margin-top:-4px;margin-bottom:16px;font-size:13.5px;color:var(--txt);font-family:var(--db);border-radius:0 var(--radius-sm) var(--radius-sm) 0;line-height:1.7}
+.code-line-explain code{font-family:var(--dm);font-size:12px;background:var(--card);padding:1px 5px;border-radius:3px;color:var(--purple)}
+.demo-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);margin-top:16px}
+.demo-label{font-family:var(--ds);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);margin-bottom:12px}
+.slider-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.slider-row label{font-family:var(--dm);font-size:12px;color:var(--txt2);width:30px;flex-shrink:0}
+.slider-row input[type=range]{flex:1;accent-color:var(--accent)}
+.slider-val{font-family:var(--dm);font-size:12px;color:var(--accent);width:40px;text-align:right;flex-shrink:0}
+.neuron-output{display:flex;gap:20px;margin-top:12px;font-family:var(--dm);font-size:12px}
+.neuron-output .n-label{color:var(--txt2)}
+.neuron-output .n-val{color:var(--accent);font-weight:600}
+.nn-svg-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:12px}
+.pipeline-full{display:flex;flex-direction:column;gap:0;margin-top:32px}
+.pipeline-stage{display:flex;gap:20px;opacity:0;transform:translateY(12px);transition:opacity .5s,transform .5s}
+.pipeline-stage.visible{opacity:1;transform:translateY(0)}
+.pipeline-connector{width:3px;background:var(--border);height:24px;margin-left:23px}
+.ps-num{font-family:var(--dm);font-size:11px;color:var(--txt2);padding-top:4px;flex-shrink:0;width:28px}
+.ps-content{flex:1;border-left:3px solid var(--border);padding:12px 16px;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;border:1px solid var(--border)}
+.ps-title{font-family:var(--ds);font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
+.ps-desc{font-size:13.5px;color:var(--txt);line-height:1.6}
+.ps-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="progress-bar" id="progress-bar" role="progressbar" aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<nav class="top-nav" id="top-nav" aria-label="Chapter navigation">
+  <div class="top-nav-inner">
+    <a href="../how-to-use-llms/index.html" class="top-nav-brand">← Part 2</a>
+    <div class="top-nav-links" id="top-nav-links">
+      <button class="tnav-btn active" data-section="s-intro" aria-current="true">Intro</button>
+      <button class="tnav-btn" data-section="s-problem">Problem</button>
+      <button class="tnav-btn" data-section="s-neuron">Neuron</button>
+      <button class="tnav-btn" data-section="s-layers">Layers</button>
+      <button class="tnav-btn" data-section="s-forward">Forward</button>
+      <button class="tnav-btn" data-section="s-loss">Loss</button>
+      <button class="tnav-btn" data-section="s-derivatives">Derivatives</button>
+      <button class="tnav-btn" data-section="s-backprop">Backprop</button>
+      <button class="tnav-btn" data-section="s-gd">Gradient Descent</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="s-intro" class="section" aria-label="Introduction">
+  <canvas id="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-content" id="main-content">
+    <div class="chapter-badge" aria-hidden="true">Part 3 · No Prior Knowledge Needed</div>
+    <div class="hero-grid">
+      <div class="hero-left">
+        <h1 class="hero-title">Neural Networks<br><span>from Scratch</span></h1>
+        <p class="hero-sub">The math, intuition, and code behind how neural networks actually learn — built up from a single neuron to a working training loop. Based on Andrej Karpathy's micrograd tutorial.</p>
+        <dl class="hero-stats">
+          <div class="stat-item"><dt class="stat-lbl">Concepts</dt><dd class="stat-val">8</dd></div>
+          <div class="stat-item"><dt class="stat-lbl">Lines of Python</dt><dd class="stat-val">~50</dd></div>
+          <div class="stat-item"><dt class="stat-lbl">Demos</dt><dd class="stat-val">5</dd></div>
+          <div class="stat-item"><dt class="stat-lbl">Source</dt><dd class="stat-val">2h</dd></div>
+        </dl>
+        <p class="stats-caveat">Companion to <a href="../index.html" style="color:var(--accent)">Part 1: How LLMs Work</a>. All concepts and code traced directly to Karpathy's micrograd lecture.</p>
+        <div class="scroll-hint" aria-hidden="true"><div class="scroll-arrow"></div>Scroll to explore</div>
+      </div>
+      <div class="hero-right">
+        <div class="typewriter-wrap" aria-label="Neural network insight">
+          <div class="tw-label" aria-hidden="true">Core Insight</div>
+          <div class="tw-prompt">Q: What even is a neural network?</div>
+          <div class="tw-response" id="tw-response" aria-live="polite" aria-atomic="true"><span class="tw-cursor" aria-hidden="true"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §1: THE PROBLEM -->
+<section id="s-problem" class="section" aria-label="The Problem We're Solving">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 1 · Motivation</div>
+      <h2 class="section-title">The Problem<br>We're Solving</h2>
+      <p class="body-text">Before we build anything, let's understand what we're trying to do. We have some inputs and we want to predict an output. For example: given these 4 measurements about a person, predict whether they'll like a movie.</p>
+      <p class="body-text">The challenge: we don't know the formula. We can't write the rules by hand. Instead, we want a system that <span class="highlight">learns the formula from examples</span> — just by seeing a lot of input/output pairs.</p>
+      <p class="body-text">A neural network is that system. It starts as a completely random function. Then it looks at thousands of examples and adjusts itself — tiny nudge by tiny nudge — until its predictions get good. This process is called <span class="highlight-a">training</span>.</p>
+      <div class="insight-box">
+        <strong>The Connection to Part 1</strong>
+        GPT does exactly this — at massive scale. Its "inputs" are tokens, its "output" is the next token, and it trained on 15 trillion examples. The math is the same as what we'll build here. Just more of it.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">Our Training Dataset</h3>
+      <p class="body-text" style="margin-bottom:12px">A tiny example to make it concrete. Four inputs, one target output:</p>
+      <div class="demo-box">
+        <div class="demo-label">Training Examples (xs → ys)</div>
+        <div class="code-block">
+<span class="co"># inputs: [x1, x2, x3, x4]</span>
+xs = [
+  [<span class="nm">2.0</span>, <span class="nm">3.0</span>, <span class="nm">-1.0</span>, <span class="nm">1.0</span>],
+  [<span class="nm">3.0</span>, <span class="nm">-1.0</span>, <span class="nm">0.5</span>, <span class="nm">1.0</span>],
+  [<span class="nm">0.5</span>, <span class="nm">1.0</span>, <span class="nm">1.0</span>, <span class="nm">1.0</span>],
+  [<span class="nm">1.0</span>, <span class="nm">1.0</span>, <span class="nm">-1.0</span>, <span class="nm">1.0</span>],
+]
+<span class="co"># targets: what we want the network to output</span>
+ys = [<span class="nm">1.0</span>, <span class="nm">-1.0</span>, <span class="nm">-1.0</span>, <span class="nm">1.0</span>]
+        </div>
+        <div class="code-line-explain">
+          <code>xs</code> is our input data — 4 examples, each with 4 numbers. <code>ys</code> is the "right answer" for each example: 1.0 or -1.0. The network starts knowing nothing, and has to learn to map xs to ys.
+        </div>
+      </div>
+      <div class="insight-box" style="margin-top:16px">
+        <strong>Why -1 and 1?</strong>
+        We use tanh as our activation function (more on this in §2), which outputs values between -1 and 1. So our targets are -1 and 1 to match that range.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §2: NEURON -->
+<section id="s-neuron" class="section" aria-label="What is a Neuron">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 2 · The Building Block</div>
+      <h2 class="section-title">What is<br>a Neuron?</h2>
+      <p class="body-text">A neuron is just a tiny mathematical function. Think of it as a <span class="highlight">dimmer switch</span>: it takes a bunch of inputs, decides how much each one matters (the weights), adds a personal default lean (the bias), and squishes the result to a bounded range.</p>
+      <p class="body-text">The formula: <span class="highlight-a">output = tanh(w₁·x₁ + w₂·x₂ + b)</span></p>
+      <p class="body-text">Where w₁, w₂ are <span class="highlight">weights</span> ("how much does this input matter?"), b is the <span class="highlight">bias</span> ("what's my default lean when inputs are zero?"), and <span class="highlight-g">tanh</span> squishes the result to always land between -1 and 1.</p>
+      <div class="code-block">
+<span class="kw">class</span> <span class="fn">Value</span>:
+  <span class="kw">def</span> <span class="fn">__init__</span>(<span class="nm">self</span>, data):
+    <span class="nm">self</span>.data = data   <span class="co"># the actual number</span>
+    <span class="nm">self</span>.grad = <span class="nm">0.0</span>   <span class="co"># gradient (filled in later)</span>
+
+  <span class="kw">def</span> <span class="fn">__mul__</span>(<span class="nm">self</span>, other):
+    <span class="kw">return</span> <span class="fn">Value</span>(<span class="nm">self</span>.data * other.data)
+
+  <span class="kw">def</span> <span class="fn">__add__</span>(<span class="nm">self</span>, other):
+    <span class="kw">return</span> <span class="fn">Value</span>(<span class="nm">self</span>.data + other.data)
+
+  <span class="kw">def</span> <span class="fn">tanh</span>(<span class="nm">self</span>):
+    <span class="kw">import</span> math
+    t = math.<span class="fn">tanh</span>(<span class="nm">self</span>.data)
+    <span class="kw">return</span> <span class="fn">Value</span>(t)
+      </div>
+      <div class="code-line-explain">
+        <code>self.data</code> is just a number — like 0.5 or -1.3. <code>self.grad</code> starts at zero and gets filled in during backpropagation (§7). The <code>__mul__</code> and <code>__add__</code> methods let us use normal Python math operators (+, *) with Value objects. <code>tanh</code> squishes any number to the range (-1, 1).
+      </div>
+      <div class="insight-box">
+        <strong>Why tanh?</strong>
+        Without an activation function, stacking neurons just produces a linear function — no matter how many layers you add. tanh introduces non-linearity, which is what lets networks learn complex patterns.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">Neuron Playground</h3>
+      <p class="body-text" style="margin-bottom:8px">Drag the sliders to change the weights and bias. Watch the neuron's output update live. Fixed inputs: x₁ = 0.5, x₂ = −0.3.</p>
+      <div class="demo-box" id="neuron-playground">
+        <div class="demo-label">Interactive Neuron</div>
+        <div class="slider-row">
+          <label>w₁</label>
+          <input type="range" id="np-w1" min="-2" max="2" step="0.05" value="0.5" aria-label="Weight 1">
+          <span class="slider-val" id="np-w1-val">0.50</span>
+        </div>
+        <div class="slider-row">
+          <label>w₂</label>
+          <input type="range" id="np-w2" min="-2" max="2" step="0.05" value="-0.3" aria-label="Weight 2">
+          <span class="slider-val" id="np-w2-val">-0.30</span>
+        </div>
+        <div class="slider-row">
+          <label>b</label>
+          <input type="range" id="np-b" min="-2" max="2" step="0.05" value="0.0" aria-label="Bias">
+          <span class="slider-val" id="np-b-val">0.00</span>
+        </div>
+        <canvas id="neuron-canvas" width="400" height="160" style="width:100%;display:block;margin-top:8px;border-radius:var(--radius-sm);border:1px solid var(--border)"></canvas>
+        <div class="neuron-output" style="margin-top:10px">
+          <span><span class="n-label">Raw sum: </span><span class="n-val" id="np-raw">0.00</span></span>
+          <span><span class="n-label">tanh output: </span><span class="n-val" id="np-out">0.00</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §3: LAYERS -->
+<section id="s-layers" class="section" aria-label="Layers and Architecture">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 3 · Architecture</div>
+      <h2 class="section-title">Layers &<br>the MLP</h2>
+      <p class="body-text">One neuron isn't enough to learn complex patterns. We stack them into <span class="highlight">layers</span>, and stack layers into a <span class="highlight-a">Multi-Layer Perceptron (MLP)</span>. Think of it as an assembly line: the first layer looks at raw inputs, the next layer looks at what the first layer found, and so on.</p>
+      <p class="body-text">Every connection between neurons is one weight. A network with 4 inputs → 3 neurons → 1 output has <span class="highlight">(4×3) + (3×1) = 15 weights</span>, plus biases. GPT-4 has the same structure, just with 405 billion weights.</p>
+      <div class="code-block">
+<span class="kw">class</span> <span class="fn">Neuron</span>:
+  <span class="kw">def</span> <span class="fn">__init__</span>(<span class="nm">self</span>, nin):
+    <span class="nm">self</span>.w = [<span class="fn">Value</span>(random.uniform(-<span class="nm">1</span>,<span class="nm">1</span>)) <span class="kw">for</span> _ <span class="kw">in</span> range(nin)]
+    <span class="nm">self</span>.b = <span class="fn">Value</span>(<span class="nm">0</span>)
+  <span class="kw">def</span> <span class="fn">__call__</span>(<span class="nm">self</span>, x):
+    act = sum(wi*xi <span class="kw">for</span> wi,xi <span class="kw">in</span> zip(<span class="nm">self</span>.w, x)) + <span class="nm">self</span>.b
+    <span class="kw">return</span> act.<span class="fn">tanh</span>()
+
+<span class="kw">class</span> <span class="fn">Layer</span>:
+  <span class="kw">def</span> <span class="fn">__init__</span>(<span class="nm">self</span>, nin, nout):
+    <span class="nm">self</span>.neurons = [<span class="fn">Neuron</span>(nin) <span class="kw">for</span> _ <span class="kw">in</span> range(nout)]
+  <span class="kw">def</span> <span class="fn">__call__</span>(<span class="nm">self</span>, x):
+    <span class="kw">return</span> [n(x) <span class="kw">for</span> n <span class="kw">in</span> <span class="nm">self</span>.neurons]
+
+<span class="kw">class</span> <span class="fn">MLP</span>:
+  <span class="kw">def</span> <span class="fn">__init__</span>(<span class="nm">self</span>, nin, nouts):
+    sizes = [nin] + nouts
+    <span class="nm">self</span>.layers = [<span class="fn">Layer</span>(sizes[i], sizes[i+<span class="nm">1</span>]) <span class="kw">for</span> i <span class="kw">in</span> range(len(nouts))]
+  <span class="kw">def</span> <span class="fn">__call__</span>(<span class="nm">self</span>, x):
+    <span class="kw">for</span> layer <span class="kw">in</span> <span class="nm">self</span>.layers: x = layer(x)
+    <span class="kw">return</span> x[<span class="nm">0</span>] <span class="kw">if</span> len(x) == <span class="nm">1</span> <span class="kw">else</span> x
+      </div>
+      <div class="code-line-explain">
+        <code>Neuron(nin)</code> creates a neuron with <code>nin</code> random weights. <code>Layer(nin, nout)</code> creates <code>nout</code> neurons that each accept <code>nin</code> inputs. <code>MLP(4, [3,1])</code> creates a 4→3→1 network. <code>__call__</code> is Python's way of making an object callable — so <code>model(x)</code> runs the forward pass.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">MLP Architecture</h3>
+      <p class="body-text" style="margin-bottom:12px">A 4→3→1 network: 4 inputs, one hidden layer of 3 neurons, 1 output.</p>
+      <div class="nn-svg-wrap">
+        <svg id="mlp-svg" viewBox="0 0 340 220" width="100%" role="img" aria-label="MLP architecture diagram"></svg>
+      </div>
+      <div class="insight-box" style="margin-top:16px">
+        <strong>Create the model in one line</strong>
+        <div class="code-block" style="margin-top:8px">n = <span class="fn">MLP</span>(<span class="nm">4</span>, [<span class="nm">3</span>, <span class="nm">1</span>])  <span class="co"># 4 inputs → 3 hidden → 1 output</span></div>
+        That's it. We now have a randomly-initialized network with 4×3 + 3×1 = 15 weights plus 4 biases = 19 learnable parameters.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §4: FORWARD PASS -->
+<section id="s-forward" class="section" aria-label="Forward Pass">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 4 · Computing the Output</div>
+      <h2 class="section-title">The Forward<br>Pass</h2>
+      <p class="body-text">The forward pass is simply: run data through the network from left to right. Each neuron fires in turn, passes its output to the next layer, and eventually we get a prediction out the end.</p>
+      <p class="body-text">At the start, since weights are random, predictions are meaningless. But we can still run the forward pass — we need it to compute how wrong we are (§5), which tells us how to improve.</p>
+      <div class="code-block">
+<span class="co"># Run one training example through the network</span>
+x = [<span class="fn">Value</span>(<span class="nm">2.0</span>), <span class="fn">Value</span>(<span class="nm">3.0</span>), <span class="fn">Value</span>(-<span class="nm">1.0</span>), <span class="fn">Value</span>(<span class="nm">1.0</span>)]
+prediction = n(x)
+print(prediction.data)  <span class="co"># e.g. 0.23</span>
+      </div>
+      <div class="code-line-explain">
+        <code>n(x)</code> calls the MLP's <code>__call__</code> method, which loops through each layer and applies it to <code>x</code>. Each layer call applies each neuron: compute <code>w·x + b</code>, apply tanh, pass output to next layer. The final value is our prediction. It's just a chain of multiplications and additions.
+      </div>
+      <div class="insight-box">
+        <strong>Everything is a number</strong>
+        At every step, we're just computing numbers. The complexity comes from doing it for billions of parameters simultaneously, but the operation on each one is simple arithmetic.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">Forward Pass Visualizer</h3>
+      <p class="body-text" style="margin-bottom:8px">Click "Run Forward Pass" to watch data flow through a 2→3→1 network. Each node lights up with its computed value.</p>
+      <div class="demo-box">
+        <div class="demo-label">Interactive Forward Pass</div>
+        <svg id="fp-svg" viewBox="0 0 360 200" width="100%" style="display:block" role="img" aria-label="Forward pass animation"></svg>
+        <div style="margin-top:12px;display:flex;gap:10px">
+          <button class="btn btn-primary btn-sm" id="fp-run-btn">▶ Run Forward Pass</button>
+          <button class="btn btn-ghost btn-sm" id="fp-reset-btn">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §5: LOSS -->
+<section id="s-loss" class="section" aria-label="Loss Function">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 5 · Measuring Error</div>
+      <h2 class="section-title">Loss — How<br>Wrong Are We?</h2>
+      <p class="body-text">After the forward pass, we have predictions. Now we need to measure how wrong they are. The <span class="highlight">loss function</span> is a report card: one single number that summarizes "here is how bad your predictions are right now."</p>
+      <p class="body-text">We use <span class="highlight-a">Mean Squared Error (MSE)</span>: for each example, square the difference between our prediction and the target, then average them all. Squaring ensures the loss is always positive and punishes big mistakes harder.</p>
+      <p class="body-text">The goal of training: make this loss number as small as possible.</p>
+      <div class="code-block">
+<span class="co"># Run all training examples through the network</span>
+ypred = [n(x) <span class="kw">for</span> x <span class="kw">in</span> xs]
+loss = sum((yout - ygt)**<span class="nm">2</span> <span class="kw">for</span> ygt, yout <span class="kw">in</span> zip(ys, ypred))
+print(loss.data)  <span class="co"># e.g. 4.73 — very wrong at first</span>
+      </div>
+      <div class="code-line-explain">
+        For each example: <code>yout</code> is our network's prediction, <code>ygt</code> is the "ground truth" target. <code>(yout - ygt)**2</code> squares the error. If we predicted 0.23 but the target was 1.0, the error is (0.23−1.0)² = 0.59. We sum all 4 example errors to get one number. The training job is to push this number toward zero.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">Loss Landscape</h3>
+      <p class="body-text" style="margin-bottom:8px">The loss is a function of all the weights. Think of it as a hilly terrain — we want to roll the ball to the lowest point. Click "Step" to run one gradient descent update.</p>
+      <div class="demo-box">
+        <div class="demo-label">Gradient Descent on Loss Curve</div>
+        <canvas id="loss-canvas" width="400" height="160" style="width:100%;display:block;border-radius:var(--radius-sm);border:1px solid var(--border)"></canvas>
+        <div class="slider-row" style="margin-top:12px">
+          <label style="width:80px;color:var(--txt2);font-family:var(--dm);font-size:12px">Learn rate</label>
+          <input type="range" id="loss-lr" min="0.01" max="0.5" step="0.01" value="0.1" aria-label="Learning rate">
+          <span class="slider-val" id="loss-lr-val">0.10</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:10px;align-items:center">
+          <button class="btn btn-primary btn-sm" id="loss-step-btn">Step ↓</button>
+          <button class="btn btn-ghost btn-sm" id="loss-reset-btn">Reset</button>
+          <span style="font-family:var(--dm);font-size:12px;color:var(--txt2)">w = <span id="loss-w-val" style="color:var(--accent)">3.00</span> · loss = <span id="loss-val-display" style="color:var(--red)">1.00</span></span>
+        </div>
+      </div>
+      <div class="insight-box" style="margin-top:16px">
+        <strong>Loss is always a single number</strong>
+        This is crucial. We need one number so we have one direction to optimize. If we had a vector of losses, we wouldn't know which way to move.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §6: DERIVATIVES -->
+<section id="s-derivatives" class="section" aria-label="Derivatives and Gradients">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 6 · The Math of Change</div>
+      <h2 class="section-title">Derivatives —<br>Which Way is Downhill?</h2>
+      <p class="body-text">We want to push the loss down. To do that, we need to know: for each weight, does increasing it make the loss go up or down? That's exactly what a <span class="highlight">derivative</span> tells us.</p>
+      <p class="body-text">Imagine standing on a hill. You can't see the whole landscape, but you can feel which direction your foot is going downhill. The derivative is that "feel" — the slope of the loss at your current position.</p>
+      <p class="body-text">Key rules we'll use:</p>
+      <ul style="font-size:15.5px;line-height:2;padding-left:20px;color:var(--txt)">
+        <li><strong style="color:var(--accent)">Addition:</strong> d/dx(a + b) = 1 — adding passes the gradient through unchanged</li>
+        <li><strong style="color:var(--amber)">Multiplication:</strong> d/dx(a · b) = b — the gradient scales by the other factor</li>
+        <li><strong style="color:var(--green)">tanh:</strong> d/dx(tanh(x)) = 1 − tanh²(x) — the chain rule handles this</li>
+      </ul>
+      <div class="insight-box">
+        <strong>The Chain Rule in one sentence</strong>
+        If A affects B and B affects the loss, then A's effect on the loss = (A's effect on B) × (B's effect on the loss). We'll use this in §7 to propagate gradients backwards through the whole network.
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">Derivative Visualizer</h3>
+      <p class="body-text" style="margin-bottom:8px">Drag the point along f(x) = x². The tangent line shows the slope (derivative) at that position. Notice: at x=0 the slope is 0; it gets steeper as x moves away from center.</p>
+      <div class="demo-box">
+        <div class="demo-label">f(x) = x² — Drag the point</div>
+        <canvas id="deriv-canvas" width="400" height="200" style="width:100%;display:block;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:ew-resize"></canvas>
+        <div style="margin-top:10px;font-family:var(--dm);font-size:12px">
+          x = <span id="deriv-x" style="color:var(--accent)">1.00</span> &nbsp;·&nbsp;
+          f(x) = <span id="deriv-fx" style="color:var(--amber)">1.00</span> &nbsp;·&nbsp;
+          f'(x) = <span id="deriv-dfx" style="color:var(--green)">2.00</span>
+        </div>
+      </div>
+      <div class="insight-box" style="margin-top:16px">
+        <strong>Gradient vs Derivative</strong>
+        A derivative is for a function of one variable. A gradient is the same idea for many variables — one slope per weight. The gradient of the loss tells us the slope in every weight direction at once.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §7: BACKPROPAGATION -->
+<section id="s-backprop" class="section" aria-label="Backpropagation">
+  <div class="section-inner two-col">
+    <div class="fade-up">
+      <div class="chapter-badge">Chapter 7 · Assigning Blame</div>
+      <h2 class="section-title">Backpropagation</h2>
+      <p class="body-text">We know the loss. We know derivatives. But we have hundreds of weights — how do we know which ones to blame, and by how much?</p>
+      <p class="body-text"><span class="highlight">Backpropagation</span> solves this efficiently. It walks the computation graph backwards — from the loss, through every operation, back to every weight — computing each weight's gradient using the chain rule.</p>
+      <p class="body-text">Karpathy's key insight: <em>"The only thing backprop does is apply the chain rule recursively."</em> Nothing more. It's mechanical, not magical.</p>
+      <div class="code-block">
+<span class="kw">for</span> p <span class="kw">in</span> n.parameters(): p.grad = <span class="nm">0.0</span>
+ypred = [n(x) <span class="kw">for</span> x <span class="kw">in</span> xs]
+loss = sum((yout - ygt)**<span class="nm">2</span> <span class="kw">for</span> ygt, yout <span class="kw">in</span> zip(ys, ypred))
+loss.<span class="fn">backward</span>()
+<span class="co"># Now every p has p.grad: "increase me → loss changes by p.grad"</span>
+      </div>
+      <div class="code-line-explain">
+        <code>p.grad = 0.0</code> clears leftover gradients from the previous training step — they'd otherwise accumulate. <code>loss.backward()</code> walks backwards through every operation that produced <code>loss</code>, applying the chain rule at each node. After this call, every weight has a <code>.grad</code> that says "increase me → loss increases by this much."
+      </div>
+    </div>
+    <div class="fade-up" style="animation-delay:.15s">
+      <h3 class="sub-title">Expression Graph</h3>
+      <p class="body-text" style="margin-bottom:8px">A simple expression: e = tanh((a·b) + a). Click "Forward Pass" to compute values, then "Backprop" to watch gradients flow backwards.</p>
+      <div class="demo-box">
+        <div class="demo-label">Computation Graph — a=2, b=-3</div>
+        <svg id="graph-svg" viewBox="0 0 380 260" width="100%" style="display:block" role="img" aria-label="Expression graph with backpropagation"></svg>
+        <div style="margin-top:10px;display:flex;gap:10px">
+          <button class="btn btn-primary btn-sm" id="graph-forward-btn">▶ Forward Pass</button>
+          <button class="btn btn-ghost btn-sm" id="graph-back-btn" disabled>← Backprop</button>
+          <button class="btn btn-ghost btn-sm" id="graph-reset-btn">Reset</button>
+        </div>
+      </div>
+      <div class="insight-box" style="margin-top:16px">
+        <strong>Why backwards?</strong>
+        We already know the loss gradient (it's 1.0 — the loss with respect to itself). We work backwards because each node only needs the gradient from the node ahead of it (closer to the loss) to compute its own gradient. It's a clean recursive application of the chain rule.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §8: GRADIENT DESCENT -->
+<section id="s-gd" class="section" aria-label="Gradient Descent and Training">
+  <div class="section-inner">
+    <div class="fade-up" style="margin-bottom:40px">
+      <div class="chapter-badge">Chapter 8 · Learning</div>
+      <h2 class="section-title">Gradient Descent —<br>The Training Loop</h2>
+      <p class="body-text" style="max-width:680px">We have gradients. Now we use them. The update rule is simple: for each weight, move it a tiny step in the opposite direction of its gradient. Opposite because the gradient points uphill — we want to go <em>downhill</em>.</p>
+    </div>
+    <div class="two-col">
+      <div class="fade-up">
+        <div class="code-block">
+<span class="co"># Create the network</span>
+n = <span class="fn">MLP</span>(<span class="nm">4</span>, [<span class="nm">3</span>, <span class="nm">1</span>])
+
+<span class="kw">for</span> step <span class="kw">in</span> range(<span class="nm">100</span>):
+  ypred = [n(x) <span class="kw">for</span> x <span class="kw">in</span> xs]          <span class="co"># 1. forward</span>
+  loss = sum((yout-ygt)**<span class="nm">2</span>
+             <span class="kw">for</span> ygt,yout <span class="kw">in</span> zip(ys,ypred)) <span class="co"># 2. loss</span>
+  <span class="kw">for</span> p <span class="kw">in</span> n.<span class="fn">parameters</span>(): p.grad=<span class="nm">0.0</span>  <span class="co"># 3. zero grads</span>
+  loss.<span class="fn">backward</span>()                         <span class="co"># 4. backprop</span>
+  <span class="kw">for</span> p <span class="kw">in</span> n.<span class="fn">parameters</span>():
+    p.data -= <span class="nm">0.01</span> * p.grad             <span class="co"># 5. update</span>
+  print(f<span class="st">"step {step} loss {loss.data:.4f}"</span>)
+        </div>
+        <div class="code-line-explain">
+          Line by line: <strong>Forward pass</strong> — run all 4 examples, get 4 predictions. <strong>Loss</strong> — square the errors and sum; one number. <strong>Zero grads</strong> — gradients accumulate, reset before each backward. <strong>Backprop</strong> — fill every <code>.grad</code> via chain rule. <strong>Update</strong> — <code>p.data -= 0.01 * p.grad</code> moves each weight a tiny step opposite its gradient. 0.01 is the learning rate. Repeat 100 times: loss drops from ~4 to near 0.
+        </div>
+      </div>
+      <div class="fade-up" style="animation-delay:.15s">
+        <h3 class="sub-title" style="margin-bottom:8px">Loss During Training</h3>
+        <canvas id="training-canvas" width="400" height="180" style="width:100%;display:block;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)"></canvas>
+        <div class="insight-box" style="margin-top:16px">
+          <strong>The full loop, in words</strong>
+          <ol style="margin:10px 0 0;padding-left:18px;line-height:2.1;font-size:13.5px">
+            <li>Run the data forward — get predictions</li>
+            <li>Measure how wrong they are (loss)</li>
+            <li>Walk backwards — compute how much each weight contributed to the error</li>
+            <li>Nudge each weight in the direction that reduces error</li>
+            <li>Repeat</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline summary -->
+    <div class="fade-up" style="margin-top:60px">
+      <div class="chapter-badge" style="color:var(--purple);justify-content:center">Full Pipeline</div>
+      <h3 class="sub-title" style="text-align:center;margin-top:12px;margin-bottom:32px">From Random Weights to Predictions</h3>
+      <div class="pipeline-full" id="nn-pipeline">
+        <div class="pipeline-stage">
+          <div class="ps-num">01</div>
+          <div class="ps-content" style="border-left:3px solid var(--cyan)">
+            <div class="ps-title" style="color:var(--cyan)">Define a Neuron</div>
+            <div class="ps-desc">Each neuron: weighted sum of inputs + bias → tanh. Weights start random. The Value class tracks numbers and their gradients.</div>
+            <div class="ps-tags"><span class="tag tag-c">Value class</span><span class="tag tag-c">weights</span><span class="tag tag-c">bias</span><span class="tag tag-c">tanh</span></div>
+          </div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-stage">
+          <div class="ps-num">02</div>
+          <div class="ps-content" style="border-left:3px solid var(--amber)">
+            <div class="ps-title" style="color:var(--amber)">Stack into an MLP</div>
+            <div class="ps-desc">Neurons → Layers → MLP. The output of each layer feeds the next. Every connection is one weight. Our 4→3→1 network has 19 parameters.</div>
+            <div class="ps-tags"><span class="tag tag-a">Neuron</span><span class="tag tag-a">Layer</span><span class="tag tag-a">MLP</span></div>
+          </div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-stage">
+          <div class="ps-num">03</div>
+          <div class="ps-content" style="border-left:3px solid var(--purple)">
+            <div class="ps-title" style="color:var(--purple)">Forward Pass</div>
+            <div class="ps-desc">Run training data left to right through the network. Each neuron computes and passes its output to the next layer. Result: one prediction per example.</div>
+            <div class="ps-tags"><span class="tag tag-p">__call__</span><span class="tag tag-p">activations</span></div>
+          </div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-stage">
+          <div class="ps-num">04</div>
+          <div class="ps-content" style="border-left:3px solid var(--red)">
+            <div class="ps-title" style="color:var(--red)">Compute Loss</div>
+            <div class="ps-desc">Mean Squared Error: sum of (prediction − target)². One scalar number. Big at the start, shrinks toward zero as training proceeds.</div>
+            <div class="ps-tags"><span class="tag tag-g" style="color:var(--red);border-color:rgba(223,27,65,.25);background:var(--red-d)">MSE</span><span class="tag tag-g" style="color:var(--red);border-color:rgba(223,27,65,.25);background:var(--red-d)">scalar loss</span></div>
+          </div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-stage">
+          <div class="ps-num">05</div>
+          <div class="ps-content" style="border-left:3px solid var(--green)">
+            <div class="ps-title" style="color:var(--green)">Backpropagation</div>
+            <div class="ps-desc">Walk the computation graph backwards. Chain rule at every node. Each weight gets a .grad: "increase me → loss changes by this much."</div>
+            <div class="ps-tags"><span class="tag tag-g">backward()</span><span class="tag tag-g">chain rule</span><span class="tag tag-g">gradients</span></div>
+          </div>
+        </div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-stage">
+          <div class="ps-num">06</div>
+          <div class="ps-content" style="border-left:3px solid var(--cyan);background:linear-gradient(135deg,rgba(5,112,222,0.04),transparent)">
+            <div class="ps-title" style="color:var(--cyan)">Gradient Descent → Repeat</div>
+            <div class="ps-desc">p.data -= lr * p.grad for every weight. Tiny step downhill. Zero gradients. Repeat forward → loss → backprop → update for hundreds of steps. Loss reaches ~0.</div>
+            <div class="ps-tags"><span class="tag tag-c">learning rate</span><span class="tag tag-c">weight update</span><span class="tag tag-c">training loop</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="fade-up" style="text-align:center;margin-top:60px">
+      <p class="body-text" style="max-width:560px;margin:0 auto;color:var(--txt2)">
+        Built from Andrej Karpathy's <a href="https://www.youtube.com/watch?v=VMj-3S1tku0" target="_blank" rel="noopener" style="color:var(--accent)">"The spelled-out intro to neural networks and backpropagation: building micrograd"</a> lecture. Now you understand the math behind <a href="../index.html" style="color:var(--accent)">Part 1's training section</a> at the code level.
+      </p>
+      <p style="margin-top:16px;font-family:var(--ds);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2)">
+        <a href="../index.html" style="color:var(--txt2);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--txt2)';this.style.borderColor='var(--border)'">← Part 1: How LLMs Work</a>
+        <span style="margin:0 12px;opacity:.4">·</span>
+        <a href="../how-to-use-llms/index.html" style="color:var(--txt2);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--txt2)';this.style.borderColor='var(--border)'">← Part 2: How to Use LLMs</a>
+        <span style="margin:0 12px;opacity:.4">·</span>
+        <a href="https://www.youtube.com/watch?v=VMj-3S1tku0" target="_blank" rel="noopener" style="color:var(--txt2);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px;transition:.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--txt2)';this.style.borderColor='var(--border)'">Source lecture</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<script src="main.js"></script>
+</body>
+</html>
