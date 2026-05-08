@@ -617,3 +617,83 @@
     render();
   });
 })();
+
+// ═══════════════════════════════════════════════
+// §8 TRAINING LOSS CANVAS (auto-animates on scroll)
+// ═══════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('training-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Simulated loss curve: loss(step) = 4.5 * e^(-0.05*step) + 0.05
+  function simulatedLoss(step) { return 4.5 * Math.exp(-0.05 * step) + 0.05; }
+
+  const totalSteps = 80;
+  let drawn = 0;
+  let animating = false;
+
+  function drawFrame() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const PAD = {top:16, right:16, bottom:24, left:40};
+    const plotW = W - PAD.left - PAD.right;
+    const plotH = H - PAD.top - PAD.bottom;
+    const maxLoss = 5;
+
+    // Grid lines
+    ctx.strokeStyle = '#F0F4F8'; ctx.lineWidth = 1;
+    [0,1,2,3,4,5].forEach(l => {
+      const y = PAD.top + plotH - (l/maxLoss)*plotH;
+      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W-PAD.right, y); ctx.stroke();
+      ctx.fillStyle = '#C8D0DC'; ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'right';
+      ctx.fillText(l.toFixed(0), PAD.left-4, y+3);
+    });
+
+    // Loss curve (up to drawn steps)
+    if (drawn > 0) {
+      ctx.beginPath();
+      for (let s = 0; s <= drawn; s++) {
+        const x = PAD.left + (s / totalSteps) * plotW;
+        const y = PAD.top + plotH - (simulatedLoss(s) / maxLoss) * plotH;
+        s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      const grad = ctx.createLinearGradient(PAD.left, 0, W-PAD.right, 0);
+      grad.addColorStop(0, '#DF1B41');
+      grad.addColorStop(1, '#00875A');
+      ctx.strokeStyle = grad; ctx.lineWidth = 2.5; ctx.stroke();
+
+      // Current point
+      const cx = PAD.left + (drawn/totalSteps)*plotW;
+      const cy = PAD.top + plotH - (simulatedLoss(drawn)/maxLoss)*plotH;
+      ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+      ctx.fillStyle = drawn >= totalSteps ? '#00875A' : '#DF1B41'; ctx.fill();
+    }
+
+    // Axes
+    ctx.strokeStyle = '#E3E8EF'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD.left, PAD.top); ctx.lineTo(PAD.left, H-PAD.bottom); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD.left, H-PAD.bottom); ctx.lineTo(W-PAD.right, H-PAD.bottom); ctx.stroke();
+
+    ctx.fillStyle = '#697386'; ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText('Training Steps →', W/2, H-4);
+    ctx.save(); ctx.rotate(-Math.PI/2); ctx.fillText('Loss', -H/2, 12); ctx.restore();
+  }
+
+  function animate() {
+    if (drawn >= totalSteps) return;
+    drawn++;
+    drawFrame();
+    setTimeout(animate, 30);
+  }
+
+  drawFrame();
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !animating) { animating = true; animate(); }
+    });
+  }, { threshold: 0.3 });
+  observer.observe(canvas);
+})();
