@@ -422,3 +422,95 @@
 
   resetBtn.addEventListener('click', () => { w = 3.0; draw(); });
 })();
+
+// ═══════════════════════════════════════════════
+// DEMO 4: DERIVATIVE VISUALIZER
+// ═══════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('deriv-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let dragging = false;
+  let xVal = 1.0; // current x position
+
+  const PAD = 30;
+  const X_RANGE = [-3, 3];
+  const Y_RANGE = [-0.5, 9.5];
+
+  function xToCanvas(x) { return PAD + ((x - X_RANGE[0]) / (X_RANGE[1] - X_RANGE[0])) * (canvas.width - 2*PAD); }
+  function yToCanvas(y) { return PAD + ((Y_RANGE[1] - y) / (Y_RANGE[1] - Y_RANGE[0])) * (canvas.height - 2*PAD); }
+  function canvasToX(px) { return X_RANGE[0] + ((px - PAD) / (canvas.width - 2*PAD)) * (X_RANGE[1] - X_RANGE[0]); }
+
+  function f(x) { return x * x; }
+  function df(x) { return 2 * x; }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Axes
+    ctx.strokeStyle = '#E3E8EF'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD, yToCanvas(0)); ctx.lineTo(W-PAD, yToCanvas(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xToCanvas(0), PAD); ctx.lineTo(xToCanvas(0), H-PAD); ctx.stroke();
+
+    // f(x) = x² curve
+    ctx.beginPath();
+    for (let px = PAD; px <= W-PAD; px++) {
+      const x = canvasToX(px);
+      const y = f(x);
+      if (y < Y_RANGE[0] || y > Y_RANGE[1]) { ctx.moveTo(px, yToCanvas(Math.min(Math.max(y, Y_RANGE[0]), Y_RANGE[1]))); continue; }
+      px === PAD ? ctx.moveTo(px, yToCanvas(y)) : ctx.lineTo(px, yToCanvas(y));
+    }
+    ctx.strokeStyle = '#635BFF'; ctx.lineWidth = 2.5; ctx.stroke();
+
+    // Tangent line: y = f(xVal) + df(xVal)*(x - xVal)
+    const slope = df(xVal);
+    const intercept = f(xVal) - slope * xVal;
+    const tx1 = Math.max(X_RANGE[0], xVal - 1.5);
+    const tx2 = Math.min(X_RANGE[1], xVal + 1.5);
+    ctx.beginPath();
+    ctx.moveTo(xToCanvas(tx1), yToCanvas(slope*tx1 + intercept));
+    ctx.lineTo(xToCanvas(tx2), yToCanvas(slope*tx2 + intercept));
+    ctx.strokeStyle = '#DF1B41'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Point on curve
+    const px = xToCanvas(xVal), py = yToCanvas(f(xVal));
+    ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI*2);
+    ctx.fillStyle = '#DF1B41'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Slope label
+    ctx.fillStyle = '#DF1B41'; ctx.font = 'bold 11px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText(`slope = ${slope.toFixed(2)}`, px, py - 14);
+
+    // Axis labels
+    ctx.fillStyle = '#697386'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('f(x) = x²', xToCanvas(2.5), yToCanvas(8));
+    ctx.fillText('x', W - PAD + 10, yToCanvas(0) + 4);
+    ctx.textAlign = 'left';
+    ctx.fillText('f(x)', xToCanvas(0) + 4, PAD + 10);
+
+    // Update stat labels
+    document.getElementById('deriv-x').textContent = xVal.toFixed(2);
+    document.getElementById('deriv-fx').textContent = f(xVal).toFixed(2);
+    document.getElementById('deriv-dfx').textContent = slope.toFixed(2);
+  }
+
+  function getX(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const px = (clientX - rect.left) * (canvas.width / rect.width);
+    return Math.max(X_RANGE[0], Math.min(X_RANGE[1], canvasToX(px)));
+  }
+
+  canvas.addEventListener('mousedown',  e => { dragging = true; xVal = getX(e); draw(); });
+  canvas.addEventListener('mousemove',  e => { if (dragging) { xVal = getX(e); draw(); } });
+  canvas.addEventListener('mouseup',    () => dragging = false);
+  canvas.addEventListener('mouseleave', () => dragging = false);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); dragging = true; xVal = getX(e); draw(); }, {passive:false});
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (dragging) { xVal = getX(e); draw(); } }, {passive:false});
+  canvas.addEventListener('touchend',   () => dragging = false);
+
+  draw();
+})();
