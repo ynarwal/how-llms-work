@@ -1,3 +1,16 @@
+// Scale canvas to device pixel ratio, mapping nativeW×nativeH coordinate space
+// to the full CSS display area so drawings look crisp on Retina.
+function scaleCanvas(canvas, nativeW, nativeH) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.offsetWidth || nativeW;
+  const cssH = canvas.offsetHeight || nativeH;
+  canvas.width  = cssW * dpr;
+  canvas.height = cssH * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr * cssW / nativeW, 0, 0, dpr * cssH / nativeH, 0, 0);
+  return ctx;
+}
+
 // ═══════════════════════════════════════════════
 // HERO CANVAS — Floating Math/Code Fragments
 // ═══════════════════════════════════════════════
@@ -194,7 +207,8 @@
     document.getElementById('np-out').textContent = out.toFixed(3);
 
     // Draw neuron diagram
-    const W = canvas.width, H = canvas.height;
+    const W = 400, H = 160;
+    scaleCanvas(canvas, W, H);
     ctx.clearRect(0, 0, W, H);
 
     // Input nodes
@@ -358,15 +372,18 @@
   const ctx = canvas.getContext('2d');
   let w = 3.0; // starting far from minimum at w=0
 
+  const NW = 400, NH = 160; // logical coordinate space
+
   // Loss function: L(w) = w² + 0.3 (minimum at w=0, loss=0.3)
   function loss(w) { return w * w + 0.3; }
   function dloss(w) { return 2 * w; } // derivative
 
-  function wToX(w) { return ((w + 4) / 8) * canvas.width; }
-  function lossToY(l) { return canvas.height - 10 - (l / 18) * (canvas.height - 20); }
+  function wToX(w) { return ((w + 4) / 8) * NW; }
+  function lossToY(l) { return NH - 10 - (l / 18) * (NH - 20); }
 
   function draw() {
-    const W = canvas.width, H = canvas.height;
+    scaleCanvas(canvas, NW, NH);
+    const W = NW, H = NH;
     ctx.clearRect(0, 0, W, H);
 
     // Grid
@@ -436,16 +453,18 @@
   const PAD = 30;
   const X_RANGE = [-3, 3];
   const Y_RANGE = [-0.5, 9.5];
+  const CW = 400, CH = 200; // logical coordinate space
 
-  function xToCanvas(x) { return PAD + ((x - X_RANGE[0]) / (X_RANGE[1] - X_RANGE[0])) * (canvas.width - 2*PAD); }
-  function yToCanvas(y) { return PAD + ((Y_RANGE[1] - y) / (Y_RANGE[1] - Y_RANGE[0])) * (canvas.height - 2*PAD); }
-  function canvasToX(px) { return X_RANGE[0] + ((px - PAD) / (canvas.width - 2*PAD)) * (X_RANGE[1] - X_RANGE[0]); }
+  function xToCanvas(x) { return PAD + ((x - X_RANGE[0]) / (X_RANGE[1] - X_RANGE[0])) * (CW - 2*PAD); }
+  function yToCanvas(y) { return PAD + ((Y_RANGE[1] - y) / (Y_RANGE[1] - Y_RANGE[0])) * (CH - 2*PAD); }
+  function canvasToX(px) { return X_RANGE[0] + ((px - PAD) / (CW - 2*PAD)) * (X_RANGE[1] - X_RANGE[0]); }
 
   function f(x) { return x * x; }
   function df(x) { return 2 * x; }
 
   function draw() {
-    const W = canvas.width, H = canvas.height;
+    scaleCanvas(canvas, CW, CH);
+    const W = CW, H = CH;
     ctx.clearRect(0, 0, W, H);
 
     // Axes
@@ -500,7 +519,8 @@
   function getX(e) {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const px = (clientX - rect.left) * (canvas.width / rect.width);
+    // Map CSS mouse position into logical CW coordinate space
+    const px = (clientX - rect.left) / rect.width * CW;
     return Math.max(X_RANGE[0], Math.min(X_RANGE[1], canvasToX(px)));
   }
 
@@ -634,7 +654,8 @@
   let animating = false;
 
   function drawFrame() {
-    const W = canvas.width, H = canvas.height;
+    scaleCanvas(canvas, 400, 180);
+    const W = 400, H = 180;
     ctx.clearRect(0, 0, W, H);
 
     const PAD = {top:16, right:16, bottom:24, left:40};
