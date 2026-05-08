@@ -8,8 +8,12 @@
   const WORDS = ['the','of','and','a ','to','in ','is ','it ','ing','tion','pre','er ','un','re ','ed ','ly ','ness','ment','ize','BPE','seq','dim','MLP','key','vec','loss','grad','mask','head','norm','next','data','text','byte','GPT','LLM','soft','max','Adam','logit','embed','token','layer','atten'];
 
   function resize() {
-    W = canvas.width = canvas.offsetWidth;
-    H = canvas.height = canvas.offsetHeight;
+    const dpr = window.devicePixelRatio || 1;
+    W = canvas.offsetWidth;
+    H = canvas.offsetHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function makeToken() {
@@ -225,10 +229,12 @@
   };
 
   function drawCurve(upToStep) {
+    const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || 400;
     const H = 200;
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const pad = { l: 40, r: 20, t: 15, b: 30 };
     const cW = W - pad.l - pad.r;
     const cH = H - pad.t - pad.b;
@@ -591,8 +597,13 @@
 (function() {
   const canvas = document.getElementById('rag-canvas');
   if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 500;
+  const H = canvas.offsetHeight || 200;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const dots = [
     {x: .28, y: .38, c: 'rgba(5,112,222,0.65)', r: 5, lbl: 'colony', retrieved: false},

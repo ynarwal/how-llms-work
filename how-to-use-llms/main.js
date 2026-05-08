@@ -7,7 +7,14 @@
   let W, H, tokens = [];
   const WORDS = ['search','voice','code','docs','think','chat','agent','plan','debug','read','write','API','tool','PDF','ask','plot','research','query','zip','model','o1','o3','GPT','Claude','Gemini','Cursor','prompt','memory','image','vision','memo','Whisper','draft','edit','run','cite','parse','RAG','deep','tune','eval'];
 
-  function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = canvas.offsetWidth;
+    H = canvas.offsetHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
 
   function makeToken() {
     const word = WORDS[Math.floor(Math.random() * WORDS.length)];
@@ -186,8 +193,13 @@
   function drawChart() {
     const canvas = document.getElementById('chart-canvas');
     if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || 340;
+    const H = 160;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
     const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const pad = { l: 36, r: 12, t: 12, b: 24 };
     const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
 

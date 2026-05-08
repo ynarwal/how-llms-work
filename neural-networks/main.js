@@ -21,7 +21,14 @@ function scaleCanvas(canvas, nativeW, nativeH) {
   let W, H, tokens = [];
   const WORDS = ['tanh','grad','w1','w2','bias','loss','relu','∂L','∂w','w·x','MLP','node','chain','rule','Value','data','back','fwd','∑','f(x)','x²','slope','dy/dx','0.01','step','zero','param','net','layer','actv','MSE','pred','y_gt','δ','λ'];
 
-  function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = canvas.offsetWidth;
+    H = canvas.offsetHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
 
   function makeToken() {
     const word = WORDS[Math.floor(Math.random() * WORDS.length)];
