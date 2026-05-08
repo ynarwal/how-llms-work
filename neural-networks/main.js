@@ -344,3 +344,81 @@
     render();
   });
 })();
+
+// ═══════════════════════════════════════════════
+// DEMO 3: LOSS LANDSCAPE
+// ═══════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('loss-canvas');
+  const stepBtn = document.getElementById('loss-step-btn');
+  const resetBtn = document.getElementById('loss-reset-btn');
+  const lrSlider = document.getElementById('loss-lr');
+  if (!canvas || !stepBtn) return;
+
+  const ctx = canvas.getContext('2d');
+  let w = 3.0; // starting far from minimum at w=0
+
+  // Loss function: L(w) = w² + 0.3 (minimum at w=0, loss=0.3)
+  function loss(w) { return w * w + 0.3; }
+  function dloss(w) { return 2 * w; } // derivative
+
+  function wToX(w) { return ((w + 4) / 8) * canvas.width; }
+  function lossToY(l) { return canvas.height - 10 - (l / 18) * (canvas.height - 20); }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = '#F0F4F8'; ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = lossToY(i * 4);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    // Loss curve
+    ctx.beginPath();
+    for (let px = 0; px <= W; px++) {
+      const wv = (px / W) * 8 - 4;
+      const ly = lossToY(loss(wv));
+      px === 0 ? ctx.moveTo(px, ly) : ctx.lineTo(px, ly);
+    }
+    ctx.strokeStyle = '#635BFF'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Minimum marker
+    ctx.beginPath(); ctx.arc(wToX(0), lossToY(0.3), 4, 0, Math.PI*2);
+    ctx.fillStyle = '#00875A'; ctx.fill();
+
+    // Ball (current position)
+    const bx = wToX(w), by = lossToY(loss(w));
+    ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI*2);
+    ctx.fillStyle = '#DF1B41'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#697386'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'left';
+    ctx.fillText('Loss ↑', 6, 16);
+    ctx.textAlign = 'center';
+    ctx.fillText('weight →', W/2, H - 2);
+    ctx.fillStyle = '#00875A';
+    ctx.fillText('min', wToX(0), lossToY(0.3) - 10);
+
+    // Current values display
+    document.getElementById('loss-w-val').textContent = w.toFixed(3);
+    document.getElementById('loss-val-display').textContent = loss(w).toFixed(3);
+  }
+
+  draw();
+
+  lrSlider.addEventListener('input', () => {
+    document.getElementById('loss-lr-val').textContent = parseFloat(lrSlider.value).toFixed(2);
+  });
+
+  stepBtn.addEventListener('click', () => {
+    const lr = parseFloat(lrSlider.value);
+    w -= lr * dloss(w); // gradient descent step
+    draw();
+  });
+
+  resetBtn.addEventListener('click', () => { w = 3.0; draw(); });
+})();
