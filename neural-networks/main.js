@@ -250,3 +250,97 @@
   [w1El, w2El, bEl].forEach(el => el.addEventListener('input', update));
   update();
 })();
+
+// ═══════════════════════════════════════════════
+// DEMO 2: FORWARD PASS VISUALIZER
+// ═══════════════════════════════════════════════
+(function(){
+  const svg = document.getElementById('fp-svg');
+  const runBtn = document.getElementById('fp-run-btn');
+  const resetBtn = document.getElementById('fp-reset-btn');
+  if (!svg || !runBtn) return;
+
+  // Hardcoded tiny network: 2 inputs → 3 hidden → 1 output
+  // weights chosen to give interesting values
+  const W1 = [[0.3,-0.5],[0.8,0.2],[-0.4,0.6]];
+  const B1 = [0.1, -0.2, 0.3];
+  const W2 = [[0.7,-0.3,0.5]];
+  const B2 = [-0.1];
+  const INPUT = [1.0, 0.5];
+
+  function tanh(x) { return Math.tanh(x); }
+
+  // Node positions
+  const nodes = {
+    i0: {x:40, y:70, layer:0},
+    i1: {x:40, y:130, layer:0},
+    h0: {x:160, y:50, layer:1},
+    h1: {x:160, y:100, layer:1},
+    h2: {x:160, y:150, layer:1},
+    o0: {x:290, y:100, layer:2}
+  };
+  const edges = [
+    ['i0','h0',W1[0][0]], ['i0','h1',W1[1][0]], ['i0','h2',W1[2][0]],
+    ['i1','h0',W1[0][1]], ['i1','h1',W1[1][1]], ['i1','h2',W1[2][1]],
+    ['h0','o0',W2[0][0]], ['h1','o0',W2[0][1]], ['h2','o0',W2[0][2]]
+  ];
+
+  let phase = 0; // 0=idle, 1=input lit, 2=hidden lit, 3=output lit
+  const nodeVals = {};
+
+  function computeVals() {
+    nodeVals['i0'] = INPUT[0]; nodeVals['i1'] = INPUT[1];
+    for (let i = 0; i < 3; i++) {
+      nodeVals['h'+i] = tanh(W1[i][0]*INPUT[0] + W1[i][1]*INPUT[1] + B1[i]);
+    }
+    nodeVals['o0'] = tanh(W2[0][0]*nodeVals['h0'] + W2[0][1]*nodeVals['h1'] + W2[0][2]*nodeVals['h2'] + B2[0]);
+  }
+
+  function render() {
+    const litLayers = phase === 0 ? [] : phase === 1 ? [0] : phase === 2 ? [0,1] : [0,1,2];
+
+    let html = '';
+    // Edges
+    edges.forEach(([from, to]) => {
+      const f = nodes[from], t = nodes[to];
+      const lit = litLayers.includes(f.layer) && litLayers.includes(t.layer);
+      html += `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}" stroke="${lit?'#635BFF44':'#E3E8EF'}" stroke-width="${lit?1.5:1}"/>`;
+    });
+    // Nodes
+    Object.entries(nodes).forEach(([id, {x, y, layer}]) => {
+      const lit = litLayers.includes(layer);
+      const val = nodeVals[id];
+      const color = ['#946800','#635BFF','#00875A'][layer];
+      html += `<circle cx="${x}" cy="${y}" r="18" fill="${lit?color+'33':'var(--surface)'}" stroke="${lit?color+'aa':'#E3E8EF'}" stroke-width="${lit?2:1}"/>`;
+      if (lit && val !== undefined) {
+        html += `<text x="${x}" y="${y+4}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${color}">${val.toFixed(2)}</text>`;
+      } else {
+        const lbl = id.startsWith('i')?`x${id[1]}`:id.startsWith('h')?`h${id[1]}`:'ŷ';
+        html += `<text x="${x}" y="${y+4}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#697386">${lbl}</text>`;
+      }
+    });
+    // Labels
+    [[40,195,'Input\nx=[1.0, 0.5]'],[160,195,'Hidden\n(tanh)'],[290,195,'Output']].forEach(([x,y,lbl]) => {
+      lbl.split('\n').forEach((line, i) => {
+        html += `<text x="${x}" y="${y + i*13}" text-anchor="middle" font-family="Inter" font-size="9" fill="#697386">${line}</text>`;
+      });
+    });
+    svg.innerHTML = html;
+  }
+
+  computeVals();
+  render();
+
+  runBtn.addEventListener('click', () => {
+    if (phase >= 3) return;
+    phase++;
+    render();
+    if (phase >= 3) runBtn.disabled = true;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    phase = 0;
+    runBtn.disabled = false;
+    render();
+  });
+})();
