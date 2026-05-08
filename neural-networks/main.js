@@ -514,3 +514,106 @@
 
   draw();
 })();
+
+// ═══════════════════════════════════════════════
+// DEMO 5: EXPRESSION GRAPH WITH BACKPROP
+// ═══════════════════════════════════════════════
+(function(){
+  const svg = document.getElementById('graph-svg');
+  const fwdBtn = document.getElementById('graph-forward-btn');
+  const backBtn = document.getElementById('graph-back-btn');
+  const resetBtn = document.getElementById('graph-reset-btn');
+  if (!svg || !fwdBtn) return;
+
+  // Expression: a=2, b=-3
+  // c = a * b = -6
+  // d = c + a = -4
+  // e = tanh(d) ≈ -0.9993
+  // Gradients (backprop from e=1.0):
+  // de/de = 1.0
+  // de/dd = 1 - tanh²(d) ≈ 0.0007
+  // de/dc = de/dd * 1 = 0.0007
+  // de/da_from_d = de/dd * 1 = 0.0007
+  // de/db = de/dc * a = 0.0007 * 2 = 0.0014
+  // de/da_from_c = de/dc * b = 0.0007 * (-3) = -0.0021
+  // de/da = de/da_from_d + de/da_from_c = 0.0007 + (-0.0021) = -0.0014
+
+  const nodes = {
+    a: {x:40,  y:60,  label:'a', val:2,           grad:-0.0014},
+    b: {x:40,  y:160, label:'b', val:-3,           grad:0.0014},
+    c: {x:160, y:110, label:'c=a×b', val:-6,       grad:0.0007},
+    d: {x:260, y:60,  label:'d=c+a', val:-4,       grad:0.0007},
+    e: {x:360, y:60,  label:'e=tanh(d)', val:-0.9993, grad:1.0}
+  };
+  const edges = [
+    {from:'a',to:'c',label:'×'}, {from:'b',to:'c',label:'×'},
+    {from:'c',to:'d',label:'+'}, {from:'a',to:'d',label:'+'},
+    {from:'d',to:'e',label:'tanh'}
+  ];
+
+  let showVals = false, showGrads = false;
+
+  function render() {
+    let html = '';
+
+    // Edges
+    edges.forEach(({from, to, label}) => {
+      const f = nodes[from], t = nodes[to];
+      html += `<line x1="${f.x+24}" y1="${f.y}" x2="${t.x-28}" y2="${t.y}" stroke="#E3E8EF" stroke-width="1.5"/>`;
+      const mx = (f.x+24 + t.x-28)/2, my = (f.y + t.y)/2;
+      html += `<text x="${mx}" y="${my-5}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#697386">${label}</text>`;
+    });
+
+    // Nodes
+    Object.values(nodes).forEach(node => {
+      const isLeaf = node.label === 'a' || node.label === 'b';
+      const isOut = node.label.startsWith('e=');
+      const color = isLeaf ? '#946800' : isOut ? '#00875A' : '#635BFF';
+      const bw = node.label.length * 7 + 20;
+
+      html += `<rect x="${node.x - bw/2}" y="${node.y - 22}" width="${bw}" height="44" rx="6" fill="${color}18" stroke="${color}66" stroke-width="1.5"/>`;
+      html += `<text x="${node.x}" y="${node.y - 5}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${color}">${node.label}</text>`;
+
+      if (showVals) {
+        html += `<text x="${node.x}" y="${node.y + 8}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="${color}">${node.val.toFixed(4)}</text>`;
+      } else {
+        html += `<text x="${node.x}" y="${node.y + 8}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C8D0DC">val=?</text>`;
+      }
+
+      if (showGrads) {
+        const gColor = node.grad > 0 ? '#00875A' : node.grad < 0 ? '#DF1B41' : '#697386';
+        html += `<text x="${node.x}" y="${node.y + 38}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${gColor}">∂=${node.grad.toFixed(4)}</text>`;
+      } else if (showVals) {
+        html += `<text x="${node.x}" y="${node.y + 38}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C8D0DC">grad=?</text>`;
+      }
+    });
+
+    // Legend
+    html += `<text x="10" y="245" font-family="Inter" font-size="10" fill="#697386">a=2, b=-3. Forward: multiply → add → tanh.</text>`;
+    if (showGrads) {
+      html += `<text x="10" y="258" font-family="Inter" font-size="10" fill="#635BFF">Backprop: gradients flow right→left via chain rule.</text>`;
+    }
+
+    svg.innerHTML = html;
+  }
+
+  render();
+
+  fwdBtn.addEventListener('click', () => {
+    showVals = true; showGrads = false;
+    fwdBtn.disabled = true; backBtn.disabled = false;
+    render();
+  });
+
+  backBtn.addEventListener('click', () => {
+    showGrads = true;
+    backBtn.disabled = true;
+    render();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    showVals = false; showGrads = false;
+    fwdBtn.disabled = false; backBtn.disabled = true;
+    render();
+  });
+})();
