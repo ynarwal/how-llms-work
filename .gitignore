@@ -1,1 +1,4 @@
 .venv/
+docs/superpowers/
+.superpowers/
+.agents/
