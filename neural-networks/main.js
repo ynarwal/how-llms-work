@@ -166,3 +166,87 @@
 
   svg.innerHTML = html;
 })();
+
+// ═══════════════════════════════════════════════
+// DEMO 1: NEURON PLAYGROUND
+// ═══════════════════════════════════════════════
+(function(){
+  const w1El = document.getElementById('np-w1');
+  const w2El = document.getElementById('np-w2');
+  const bEl  = document.getElementById('np-b');
+  if (!w1El) return;
+
+  const X1 = 0.5, X2 = -0.3;
+  const canvas = document.getElementById('neuron-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function update() {
+    const w1 = parseFloat(w1El.value);
+    const w2 = parseFloat(w2El.value);
+    const b  = parseFloat(bEl.value);
+    document.getElementById('np-w1-val').textContent = w1.toFixed(2);
+    document.getElementById('np-w2-val').textContent = w2.toFixed(2);
+    document.getElementById('np-b-val').textContent  = b.toFixed(2);
+
+    const raw = w1 * X1 + w2 * X2 + b;
+    const out = Math.tanh(raw);
+    document.getElementById('np-raw').textContent = raw.toFixed(3);
+    document.getElementById('np-out').textContent = out.toFixed(3);
+
+    // Draw neuron diagram
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Input nodes
+    const inputs = [
+      {label: `x₁=0.5`, val: `×${w1.toFixed(2)}`, color: '#946800', y: H*0.3},
+      {label: `x₂=-0.3`, val: `×${w2.toFixed(2)}`, color: '#0570DE', y: H*0.7}
+    ];
+    inputs.forEach(inp => {
+      ctx.beginPath(); ctx.arc(60, inp.y, 20, 0, Math.PI*2);
+      ctx.fillStyle = inp.color+'22'; ctx.fill();
+      ctx.strokeStyle = inp.color+'88'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = inp.color; ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(inp.label, 60, inp.y);
+
+      // Weight label on line
+      ctx.beginPath(); ctx.moveTo(80, inp.y); ctx.lineTo(200, H/2);
+      ctx.strokeStyle = inp.color+'55'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = inp.color+'bb'; ctx.font = '9px JetBrains Mono';
+      ctx.fillText(inp.val, 135, (inp.y + H/2)/2 + (inp.y < H/2 ? -8 : 8));
+    });
+
+    // Bias
+    ctx.fillStyle = '#697386'; ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText(`b=${b.toFixed(2)}`, 205, H*0.12);
+
+    // Sum node
+    ctx.beginPath(); ctx.arc(220, H/2, 28, 0, Math.PI*2);
+    const rawCol = raw > 0 ? '#635BFF' : '#DF1B41';
+    ctx.fillStyle = rawCol+'22'; ctx.fill();
+    ctx.strokeStyle = rawCol+'88'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = rawCol; ctx.font = '9px JetBrains Mono'; ctx.textBaseline = 'middle';
+    ctx.fillText(raw.toFixed(2), 220, H/2 - 7);
+    ctx.fillText('Σ+b', 220, H/2 + 7);
+
+    // Arrow to tanh
+    ctx.beginPath(); ctx.moveTo(248, H/2); ctx.lineTo(290, H/2);
+    ctx.strokeStyle = '#E3E8EF'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#697386'; ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText('tanh', 269, H/2 - 10);
+
+    // Output node
+    const outMapped = (out + 1) / 2;
+    const hue = Math.round(outMapped * 140);
+    const outCol = `hsl(${hue},60%,40%)`;
+    ctx.beginPath(); ctx.arc(330, H/2, 24, 0, Math.PI*2);
+    ctx.fillStyle = outCol+'33'; ctx.fill();
+    ctx.strokeStyle = outCol+'aa'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = outCol; ctx.font = 'bold 11px JetBrains Mono'; ctx.textBaseline = 'middle';
+    ctx.fillText(out.toFixed(3), 330, H/2);
+  }
+
+  [w1El, w2El, bEl].forEach(el => el.addEventListener('input', update));
+  update();
+})();
