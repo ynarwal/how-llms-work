@@ -184,7 +184,7 @@ ys = [<span class="nm">1.0</span>, <span class="nm">-1.0</span>, <span class="nm
           <input type="range" id="np-b" min="-2" max="2" step="0.05" value="0.0" aria-label="Bias">
           <span class="slider-val" id="np-b-val">0.00</span>
         </div>
-        <canvas id="neuron-canvas" width="400" height="160" style="width:100%;display:block;margin-top:8px;border-radius:var(--radius-sm);border:1px solid var(--border)"></canvas>
+        <canvas id="neuron-canvas" width="400" height="220" style="width:100%;display:block;margin-top:8px;border-radius:var(--radius-sm);border:1px solid var(--border)"></canvas>
         <div class="neuron-output" style="margin-top:10px">
           <span><span class="n-label">Raw sum: </span><span class="n-val" id="np-raw">0.00</span></span>
           <span><span class="n-label">tanh output: </span><span class="n-val" id="np-out">0.00</span></span>
@@ -388,8 +388,22 @@ loss.<span class="fn">backward</span>()
       <h3 class="sub-title">Expression Graph</h3>
       <p class="body-text" style="margin-bottom:8px">A simple expression: e = tanh((a·b) + a). Click "Forward Pass" to compute values, then "Backprop" to watch gradients flow backwards.</p>
       <div class="demo-box">
-        <div class="demo-label">Computation Graph — a=2, b=-3</div>
-        <svg id="graph-svg" viewBox="0 0 380 260" width="100%" style="display:block" role="img" aria-label="Expression graph with backpropagation"></svg>
+        <div class="demo-label">Computation Graph — e = tanh((a·b) + a)</div>
+        <div class="bp-inputs">
+          <div class="bp-input-group">
+            <label for="bp-a">a =</label>
+            <input type="number" id="bp-a" value="2" step="0.5" min="-5" max="5">
+          </div>
+          <div class="bp-input-group">
+            <label for="bp-b">b =</label>
+            <input type="number" id="bp-b" value="-3" step="0.5" min="-5" max="5">
+          </div>
+        </div>
+        <div style="position:relative">
+          <div id="bp-tooltip" class="bp-tooltip"></div>
+          <svg id="graph-svg" viewBox="0 0 420 200" width="100%" style="display:block" role="img" aria-label="Expression graph with backpropagation"></svg>
+        </div>
+        <div class="bp-status" id="bp-status">Edit a and b, then click Forward Pass</div>
         <div style="margin-top:10px;display:flex;gap:10px">
           <button class="btn btn-primary btn-sm" id="graph-forward-btn">▶ Forward Pass</button>
           <button class="btn btn-ghost btn-sm" id="graph-back-btn" disabled>← Backprop</button>

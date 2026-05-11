@@ -145,10 +145,14 @@
       </div>
       <div class="fade-up" style="animation-delay:.15s">
         <h3 class="sub-title">BPE in Action</h3>
-        <svg id="bpe-svg" viewBox="0 0 380 280" width="100%" style="background:var(--card);border:1px solid var(--border);border-radius:10px;display:block" role="img" aria-labelledby="bpe-title" aria-describedby="bpe-desc"><title id="bpe-title">BPE Tokenization Steps</title><desc id="bpe-desc">Interactive diagram showing how Byte Pair Encoding progressively merges characters into subword tokens</desc></svg>
-        <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
-          <button class="btn btn-ghost btn-sm" id="bpe-advance-btn" aria-label="Advance to next BPE step">Next Step →</button>
-          <span id="bpe-step-label" style="font-family:var(--dm);font-size:11px;color:var(--txt2)">Step 1 of 5</span>
+        <input type="text" id="bpe-input" class="bpe-input" value="tokenization" maxlength="40" aria-label="Text to tokenize" spellcheck="false" />
+        <div class="bpe-token-strip" id="bpe-strip" aria-live="polite" aria-label="BPE token strip"></div>
+        <div class="bpe-merge-log" id="bpe-log" aria-live="polite"></div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" id="bpe-step-btn">Next Merge →</button>
+          <button class="btn btn-ghost btn-sm" id="bpe-auto-btn">▶ Auto</button>
+          <button class="btn btn-ghost btn-sm" id="bpe-reset-btn">Reset</button>
+          <span id="bpe-count" style="font-family:var(--dm);font-size:11px;color:var(--txt2);margin-left:4px"></span>
         </div>
       </div>
     </div>
@@ -179,7 +183,10 @@
       </div>
       <div class="fade-up" style="animation-delay:.15s">
         <h3 class="sub-title">Transformer Architecture</h3>
-        <svg id="transformer-svg" viewBox="0 0 360 340" width="100%" style="background:var(--card);border:1px solid var(--border);border-radius:10px;display:block;margin-bottom:16px" role="img" aria-label="Transformer architecture diagram showing data flow from input tokens through embedding, attention, and feed-forward layers to output logits"><title>Transformer Architecture</title></svg>
+        <div class="transformer-wrap">
+          <svg id="transformer-svg" viewBox="0 0 360 340" width="100%" style="background:var(--card);border:1px solid var(--border);border-radius:10px;display:block;margin-bottom:16px;cursor:pointer" role="img" aria-label="Transformer architecture — click a layer to learn more"><title>Transformer Architecture</title></svg>
+          <div id="transformer-card" class="transformer-card"></div>
+        </div>
         <div class="insight-box">
           <strong>What is an Embedding?</strong>
           Each token ID maps to a learned vector of ~1,000–4,000 numbers called its <em>embedding</em>. Think of it as a coordinate in meaning-space — initialized randomly, then shaped by training. The same token (e.g. "bank") always enters the network with the same embedding vector. <em>Attention layers</em> then mix in context from surrounding tokens, so by the time "bank" reaches deeper layers, "river bank" and "bank account" carry completely different representations. Polysemy is resolved by context, not by storing multiple meanings per token.
@@ -245,7 +252,7 @@
           <span class="temp-val" id="temp-val" aria-live="polite">0.8</span>
         </label>
         <div class="prob-section-label" id="prob-label">Next token candidates</div>
-        <div class="prob-bars" id="prob-bars" role="list" aria-labelledby="prob-label"></div>
+        <canvas id="prob-canvas" aria-label="Token probability distribution" role="img"></canvas>
         <div class="inference-controls">
           <button class="btn btn-primary btn-sm" id="sample-btn" aria-describedby="sample-info">Sample Next Token</button>
           <button class="btn btn-ghost btn-sm" id="reset-gen-btn" aria-label="Reset generated sequence to start">Reset</button>

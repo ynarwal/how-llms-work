@@ -341,3 +341,26 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.75;margin-bottom:16p
 .rag-answer-text{font-size:13.5px;color:var(--txt);line-height:1.65;min-height:52px;font-family:var(--db)}
 .rag-answer-badge{font-family:var(--ds);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:100px;display:inline-block;margin-top:10px}
 @media(max-width:900px){.rag-two-col{grid-template-columns:1fr}.rag-docs{grid-template-columns:1fr}.rag-compare{grid-template-columns:1fr}}
+
+/* ── Token Sampling canvas ── */
+#prob-canvas{width:100%;height:180px;display:block;border-radius:8px;background:var(--card);border:1px solid var(--border)}
+.gen-token-new{display:inline;opacity:0;transform:translateY(6px);transition:opacity .3s ease,transform .3s ease}
+.gen-token-new--in{opacity:1;transform:translateY(0)}
+
+/* ── BPE token strip ── */
+.bpe-input{width:100%;box-sizing:border-box;font-family:var(--dm);font-size:14px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--txt);outline:none;margin-bottom:10px}
+.bpe-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(99,91,255,.12)}
+.bpe-token-strip{display:flex;flex-wrap:wrap;gap:5px;min-height:44px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:8px;align-items:center}
+.bpe-pill{font-family:var(--dm);font-size:12px;padding:3px 8px;border-radius:4px;border:1px solid;white-space:nowrap}
+.bpe-pill.merging{animation:bpe-flash .3s ease forwards}
+@keyframes bpe-flash{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.bpe-merge-log{margin-top:8px;max-height:80px;overflow-y:auto;font-family:var(--dm);font-size:11px;color:var(--txt2);line-height:2}
+.bpe-log-token{color:var(--accent);font-weight:600}
+
+/* ── Transformer card ── */
+.transformer-wrap{position:relative}
+.transformer-card{position:absolute;top:0;right:-8px;width:190px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12.5px;line-height:1.65;color:var(--txt);opacity:0;transform:translateX(10px);transition:opacity .2s ease,transform .2s ease;pointer-events:none;z-index:10}
+.transformer-card.tc-visible{opacity:1;transform:translateX(0);pointer-events:auto}
+.transformer-card-title{font-family:var(--ds);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.transformer-heatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:10px;border-radius:4px;overflow:hidden}
+.tc-cell{aspect-ratio:1;border-radius:2px}

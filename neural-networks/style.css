@@ -341,3 +341,13 @@ p.body-text{color:var(--txt);font-size:15.5px;line-height:1.75;margin-bottom:16p
 .rag-answer-text{font-size:13.5px;color:var(--txt);line-height:1.65;min-height:52px;font-family:var(--db)}
 .rag-answer-badge{font-family:var(--ds);font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:100px;display:inline-block;margin-top:10px}
 @media(max-width:900px){.rag-two-col{grid-template-columns:1fr}.rag-docs{grid-template-columns:1fr}.rag-compare{grid-template-columns:1fr}}
+
+/* ── Backprop demo ── */
+.bp-inputs{display:flex;gap:16px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.bp-input-group{display:flex;align-items:center;gap:6px;font-family:var(--dm);font-size:12px;color:var(--txt2)}
+.bp-input-group input[type=number]{width:56px;font-family:var(--dm);font-size:13px;padding:4px 8px;background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--txt);outline:none;text-align:center}
+.bp-input-group input[type=number]:focus{border-color:var(--accent)}
+.bp-status{font-family:var(--dm);font-size:11px;color:var(--txt2);margin-top:6px;min-height:18px}
+.bp-tooltip{position:absolute;background:var(--ink);color:#A5B4FC;font-family:var(--dm);font-size:11px;padding:6px 10px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:20;white-space:nowrap}
+.bp-tooltip.bp-visible{opacity:1}
+

@@ -3,11 +3,13 @@
 function scaleCanvas(canvas, nativeW, nativeH) {
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.offsetWidth || nativeW;
-  const cssH = canvas.offsetHeight || nativeH;
+  const cssH = Math.round(cssW * nativeH / nativeW);
   canvas.width  = cssW * dpr;
   canvas.height = cssH * dpr;
+  canvas.style.height = cssH + 'px';
   const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr * cssW / nativeW, 0, 0, dpr * cssH / nativeH, 0, 0);
+  const scale = dpr * cssW / nativeW;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
   return ctx;
 }
 
@@ -214,7 +216,7 @@ function scaleCanvas(canvas, nativeW, nativeH) {
     document.getElementById('np-out').textContent = out.toFixed(3);
 
     // Draw neuron diagram
-    const W = 400, H = 160;
+    const W = 400, H = 220;
     scaleCanvas(canvas, W, H);
     ctx.clearRect(0, 0, W, H);
 
@@ -543,106 +545,162 @@ function scaleCanvas(canvas, nativeW, nativeH) {
 })();
 
 // ═══════════════════════════════════════════════
-// DEMO 5: EXPRESSION GRAPH WITH BACKPROP
+// DEMO 5: EXPRESSION GRAPH WITH BACKPROP (rebuilt)
 // ═══════════════════════════════════════════════
 (function(){
-  const svg = document.getElementById('graph-svg');
-  const fwdBtn = document.getElementById('graph-forward-btn');
+  const svg     = document.getElementById('graph-svg');
+  const fwdBtn  = document.getElementById('graph-forward-btn');
   const backBtn = document.getElementById('graph-back-btn');
-  const resetBtn = document.getElementById('graph-reset-btn');
+  const resetBtn= document.getElementById('graph-reset-btn');
+  const aInput  = document.getElementById('bp-a');
+  const bInput  = document.getElementById('bp-b');
+  const statusEl= document.getElementById('bp-status');
+  const tooltip = document.getElementById('bp-tooltip');
   if (!svg || !fwdBtn) return;
 
-  // Expression: a=2, b=-3
-  // c = a * b = -6
-  // d = c + a = -4
-  // e = tanh(d) ≈ -0.9993
-  // Gradients (backprop from e=1.0):
-  // de/de = 1.0
-  // de/dd = 1 - tanh²(d) ≈ 0.0007
-  // de/dc = de/dd * 1 = 0.0007
-  // de/da_from_d = de/dd * 1 = 0.0007
-  // de/db = de/dc * a = 0.0007 * 2 = 0.0014
-  // de/da_from_c = de/dc * b = 0.0007 * (-3) = -0.0021
-  // de/da = de/da_from_d + de/da_from_c = 0.0007 + (-0.0021) = -0.0014
-
-  const nodes = {
-    a: {x:40,  y:60,  label:'a', val:2,           grad:-0.0014},
-    b: {x:40,  y:160, label:'b', val:-3,           grad:0.0014},
-    c: {x:160, y:110, label:'c=a×b', val:-6,       grad:0.0007},
-    d: {x:260, y:60,  label:'d=c+a', val:-4,       grad:0.0007},
-    e: {x:360, y:60,  label:'e=tanh(d)', val:-0.9993, grad:1.0}
-  };
-  const edges = [
-    {from:'a',to:'c',label:'×'}, {from:'b',to:'c',label:'×'},
-    {from:'c',to:'d',label:'+'}, {from:'a',to:'d',label:'+'},
-    {from:'d',to:'e',label:'tanh'}
+  // Node positions in viewBox 0 0 420 200
+  const NL = { a:{x:50,y:70}, b:{x:50,y:150}, c:{x:170,y:110}, d:{x:290,y:70}, e:{x:400,y:70} };
+  const EDGES = [
+    {from:'a',to:'c',op:'×',formula:'∂c/∂a = b'},
+    {from:'b',to:'c',op:'×',formula:'∂c/∂b = a'},
+    {from:'c',to:'d',op:'+',formula:'∂d/∂c = 1'},
+    {from:'a',to:'d',op:'+',formula:'∂d/∂a = 1'},
+    {from:'d',to:'e',op:'tanh',formula:'∂e/∂d = 1−tanh²(d)'}
   ];
 
-  let showVals = false, showGrads = false;
+  // Which edges light up at each backprop step
+  const BACK_EDGE_STEPS = [
+    [],             // e — output node, no incoming edges to light yet
+    ['d-e'],        // d
+    ['c-d','a-d'],  // c (also lights a→d path)
+    ['a-c','a-d'],  // a
+    ['b-c']         // b
+  ];
+  const BACK_ORDER = ['e','d','c','a','b'];
 
-  function render() {
-    let html = '';
+  let phase = 'idle';
+  let backStep = -1;
+  let litEdges = new Set();
+  let vals = {}, grads = {};
+  let backTimer = null;
 
-    // Edges
-    edges.forEach(({from, to, label}) => {
-      const f = nodes[from], t = nodes[to];
-      html += `<line x1="${f.x+24}" y1="${f.y}" x2="${t.x-28}" y2="${t.y}" stroke="#E3E8EF" stroke-width="1.5"/>`;
-      const mx = (f.x+24 + t.x-28)/2, my = (f.y + t.y)/2;
-      html += `<text x="${mx}" y="${my-5}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#697386">${label}</text>`;
-    });
-
-    // Nodes
-    Object.values(nodes).forEach(node => {
-      const isLeaf = node.label === 'a' || node.label === 'b';
-      const isOut = node.label.startsWith('e=');
-      const color = isLeaf ? '#946800' : isOut ? '#00875A' : '#635BFF';
-      const bw = node.label.length * 7 + 20;
-
-      html += `<rect x="${node.x - bw/2}" y="${node.y - 22}" width="${bw}" height="44" rx="6" fill="${color}18" stroke="${color}66" stroke-width="1.5"/>`;
-      html += `<text x="${node.x}" y="${node.y - 5}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${color}">${node.label}</text>`;
-
-      if (showVals) {
-        html += `<text x="${node.x}" y="${node.y + 8}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="${color}">${node.val.toFixed(4)}</text>`;
-      } else {
-        html += `<text x="${node.x}" y="${node.y + 8}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C8D0DC">val=?</text>`;
-      }
-
-      if (showGrads) {
-        const gColor = node.grad > 0 ? '#00875A' : node.grad < 0 ? '#DF1B41' : '#697386';
-        html += `<text x="${node.x}" y="${node.y + 38}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${gColor}">∂=${node.grad.toFixed(4)}</text>`;
-      } else if (showVals) {
-        html += `<text x="${node.x}" y="${node.y + 38}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C8D0DC">grad=?</text>`;
-      }
-    });
-
-    // Legend
-    html += `<text x="10" y="245" font-family="Inter" font-size="10" fill="#697386">a=2, b=-3. Forward: multiply → add → tanh.</text>`;
-    if (showGrads) {
-      html += `<text x="10" y="258" font-family="Inter" font-size="10" fill="#635BFF">Backprop: gradients flow right→left via chain rule.</text>`;
-    }
-
-    svg.innerHTML = html;
+  function compute(a, b) {
+    const c = a * b, d = c + a, e = Math.tanh(d);
+    const ded = 1 - e*e;
+    return {
+      vals:  {a, b, c, d, e},
+      grads: {e:1, d:ded, c:ded, a:ded + ded*b, b:ded*a}
+    };
   }
 
-  render();
+  function getAB() { return { a: parseFloat(aInput.value)||0, b: parseFloat(bInput.value)||0 }; }
 
-  fwdBtn.addEventListener('click', () => {
-    showVals = true; showGrads = false;
-    fwdBtn.disabled = true; backBtn.disabled = false;
-    render();
-  });
+  function nodeColor(id) {
+    return id==='a'||id==='b' ? '#946800' : id==='e' ? '#00875A' : '#635BFF';
+  }
 
-  backBtn.addEventListener('click', () => {
-    showGrads = true;
-    backBtn.disabled = true;
-    render();
-  });
+  function render() {
+    const showVals  = phase !== 'idle';
+    const showGrads = phase === 'backprop' && backStep >= 0;
 
-  resetBtn.addEventListener('click', () => {
-    showVals = false; showGrads = false;
-    fwdBtn.disabled = false; backBtn.disabled = true;
+    let html = '';
+
+    EDGES.forEach(({from,to,op,formula}) => {
+      const f=NL[from], t=NL[to];
+      const lit = litEdges.has(from+'-'+to);
+      html += `<line x1="${f.x+24}" y1="${f.y}" x2="${t.x-24}" y2="${t.y}"
+        stroke="${lit?'#635BFF':'#E3E8EF'}" stroke-width="${lit?2.5:1.5}"
+        data-edge="${from}-${to}" data-formula="${formula}" style="cursor:${showVals?'pointer':'default'}"/>`;
+      const mx=(f.x+24+t.x-24)/2, my=(f.y+t.y)/2;
+      if (lit) {
+        html += `<polygon points="${mx-4},${my-3} ${mx+4},${my-3} ${mx},${my+5}" fill="#635BFF"/>`;
+      }
+      html += `<text x="${mx}" y="${my-6}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#697386">${op}</text>`;
+    });
+
+    Object.keys(NL).forEach(id => {
+      const {x,y}=NL[id], color=nodeColor(id);
+      const isLit = showGrads && BACK_ORDER.slice(0, backStep).includes(id);
+      const bw=44;
+      html += `<rect x="${x-bw/2}" y="${y-24}" width="${bw}" height="48" rx="6"
+        fill="${isLit?color+'28':color+'14'}" stroke="${isLit?color+'cc':color+'55'}"
+        stroke-width="${isLit?2:1.5}"/>`;
+      const lbl = id==='c'?'c=a·b':id==='d'?'d=c+a':id==='e'?'e=tanh':id;
+      html += `<text x="${x}" y="${y-9}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${color}">${lbl}</text>`;
+
+      if (showVals && vals[id]!==undefined) {
+        html += `<text x="${x}" y="${y+5}" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="bold" fill="${color}">${vals[id].toFixed(3)}</text>`;
+      } else {
+        html += `<text x="${x}" y="${y+5}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C8D0DC">val=?</text>`;
+      }
+
+      if (showGrads && isLit && grads[id]!==undefined) {
+        const g=grads[id], gc=g>0?'#00875A':g<0?'#DF1B41':'#697386';
+        html += `<text x="${x}" y="${y+18}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${gc}">∂=${g.toFixed(4)}</text>`;
+        const bw2=Math.min(40,Math.abs(g)*30);
+        html += `<rect x="${x-bw2/2}" y="${y+22}" width="${bw2}" height="3" rx="1.5" fill="${gc}88"/>`;
+      } else if (showVals) {
+        html += `<text x="${x}" y="${y+18}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#C8D0DC">grad=?</text>`;
+      }
+    });
+
+    svg.innerHTML = html;
+
+    svg.querySelectorAll('[data-edge]').forEach(el => {
+      el.addEventListener('mouseenter', e => {
+        if (!showVals || !tooltip) return;
+        const r=svg.getBoundingClientRect();
+        tooltip.textContent = el.dataset.formula;
+        tooltip.style.left = (e.clientX-r.left+8)+'px';
+        tooltip.style.top  = (e.clientY-r.top-28)+'px';
+        tooltip.classList.add('bp-visible');
+      });
+      el.addEventListener('mouseleave', () => tooltip && tooltip.classList.remove('bp-visible'));
+    });
+  }
+
+  function resetState() {
+    phase='idle'; backStep=-1; litEdges.clear(); vals={}; grads={};
+    clearTimeout(backTimer);
+    fwdBtn.disabled=false; backBtn.disabled=true;
+    if (statusEl) statusEl.textContent='Edit a and b, then click Forward Pass';
     render();
-  });
+  }
+
+  function runForward() {
+    const {a,b}=getAB(), result=compute(a,b);
+    vals=result.vals; grads=result.grads;
+    phase='forward'; backStep=-1; litEdges.clear();
+    fwdBtn.disabled=true; backBtn.disabled=false;
+    if (statusEl) statusEl.textContent=`Forward: e = tanh(${vals.d.toFixed(3)}) = ${vals.e.toFixed(4)}`;
+    render();
+  }
+
+  function runBackprop() {
+    if (phase!=='forward') return;
+    backBtn.disabled=true;
+    phase='backprop'; backStep=0;
+
+    function step() {
+      if (backStep >= BACK_ORDER.length) {
+        if (statusEl) statusEl.textContent='Backprop complete — all gradients computed via chain rule.';
+        render(); return;
+      }
+      (BACK_EDGE_STEPS[backStep]||[]).forEach(e => litEdges.add(e));
+      if (statusEl) statusEl.textContent=`∂L/∂${BACK_ORDER[backStep]} = ${grads[BACK_ORDER[backStep]]?.toFixed(4)??'?'}`;
+      backStep++;
+      render();
+      backTimer = setTimeout(step, 500);
+    }
+    step();
+  }
+
+  [aInput,bInput].forEach(el => el && el.addEventListener('input', resetState));
+  fwdBtn.addEventListener('click', runForward);
+  backBtn.addEventListener('click', runBackprop);
+  resetBtn.addEventListener('click', resetState);
+
+  resetState();
 })();
 
 // ═══════════════════════════════════════════════
